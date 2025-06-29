@@ -2,9 +2,13 @@
 import { createBrowserRouter } from "react-router-dom";
 import App from "../App";
 import Login from "../pages/Login";
-import AdminDashboard from "../pages/AdminDashboard";
+import AdminDashboard from "../pages/FormBuilder";
 import ProtectedRoute from "../components/ProtectedRoute";
 import PublicRoute from "../components/PublicRoute";
+import AdminHome from "../pages/AdminHome"; // new dashboard page
+import FormBuilder from "../pages/FormBuilder"; // previously AdminDashboard
+import AdminLayout from "../pages/AdminLayout";
+
 
 export const router = createBrowserRouter([
   {
@@ -20,13 +24,20 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "admin",
-        element: (
-          <ProtectedRoute>
-            <AdminDashboard />
-          </ProtectedRoute>
-        ),
-      },
+  path: "admin",
+  element: <ProtectedRoute><AdminLayout /></ProtectedRoute>, // has <Outlet />
+  children: [
+    {
+      index: true, // matches /admin
+      element: <AdminHome />, // dashboard list, analytics etc.
+    },
+    {
+      path: "create",
+      element: <FormBuilder />, // your current form builder logic
+    },
+  ],
+},
+
     ],
   },
 ]);

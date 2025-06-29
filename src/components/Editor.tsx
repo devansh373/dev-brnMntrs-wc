@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import JoditEditor from "jodit-react";
+import { stripHtml } from "../utils/helper";
 
 type Props = {
   content: string;
@@ -14,7 +15,7 @@ const Editor = ({ content, setContent }: Props) => {
       ref={editor}
       value={content}
       tabIndex={1}
-      onBlur={(newContent) => setContent(newContent)}
+      onBlur={(newContent) => setContent(stripHtml(newContent))}
       onChange={() => {}}
     />
   );

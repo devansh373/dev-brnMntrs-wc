@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged} from "firebase/auth";
 import type { User} from "firebase/auth";
-import { auth, db } from "../utils/firebase";
+import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 
 // Define the context shape
