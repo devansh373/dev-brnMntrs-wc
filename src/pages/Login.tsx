@@ -1,14 +1,21 @@
 // src/pages/Login.tsx
 import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "../firebase";
+import { auth, db } from "../utils/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Login() {
   const { register, handleSubmit } = useForm();
+  const [errorMessage, setErrorMessage] = useState("")
   const navigate = useNavigate();
+
+ //  const { user, role, loading } = useAuth();
+
+  // if (loading) return <div>Loading...</div>;
+  // if (!user || role !== "admin") 
+
 //   useEffect(() => {
 //     const unsubscribe = onAuthStateChanged(auth, (user) => {
 //       if (user) {
@@ -44,7 +51,7 @@ export default function Login() {
         alert("You are not authorized");
       }
     } catch (err: any) {
-      alert("Login failed: " + err.message);
+      setErrorMessage("Login failed: " + err.message);
     }
   };
 
@@ -62,7 +69,8 @@ export default function Login() {
         placeholder="Password"
         className="mb-2 w-full p-2 border"
       />
-      <button type="submit" className="bg-blue-600 text-white px-4 py-2">
+      <p className="text-red-500">{errorMessage}</p>
+      <button type="submit" className="bg-blue-600 hover:bg-blue-700 cursor-pointer text-white px-4 py-2">
         Login
       </button>
     </form>
