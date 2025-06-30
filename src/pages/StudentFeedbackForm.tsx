@@ -10,10 +10,11 @@ import {
   query,
   where,
   getDocs,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "../utils/firebase";
 import { useForm } from "react-hook-form";
-import { sendEmailOtp } from "../utils/sendOtp"; 
+import { sendEmailOtp } from "../utils/sendOtp";
 import { verifyEmailOtp } from "../utils/verifyOtp";
 
 export default function FeedbackForm() {
@@ -24,9 +25,10 @@ export default function FeedbackForm() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [emailOtpSent, setEmailOtpSent] = useState(false);
-const [emailOtpInput, setEmailOtpInput] = useState("");
-const [emailOtpVerified, setEmailOtpVerified] = useState(false);
-const [loadingOtp, setLoadingOtp] = useState(false);
+  const [emailOtpInput, setEmailOtpInput] = useState("");
+  const [emailOtpVerified, setEmailOtpVerified] = useState(false);
+  const [loadingOtp, setLoadingOtp] = useState(false);
+  const [loadingOtpVerification, setLoadingOtpVerification] = useState(false);
 
   const {
     register,
@@ -54,39 +56,43 @@ const [loadingOtp, setLoadingOtp] = useState(false);
   }, [id]);
 
   const handleSendOtp = async () => {
-  try {
-    setLoadingOtp(true);
-    const result = await sendEmailOtp(email); // email is your state
-    if (result.success) {
-      setEmailOtpSent(true);
-      alert("OTP sent to your email");
+    try {
+      setLoadingOtp(true);
+      const result = await sendEmailOtp(email); // email is your state
+      if (result.success) {
+        setEmailOtpSent(true);
+        alert("OTP sent to your email");
+      }
+    } catch (err) {
+      alert("Failed to send OTP");
+    } finally {
+      setLoadingOtp(false);
     }
-  } catch (err) {
-    alert("Failed to send OTP");
-  } finally {
-    setLoadingOtp(false);
-  }
-};
+  };
 
-
-const handleVerifyEmailOtp = async () => {
-  try {
-    const result = await verifyEmailOtp(email, emailOtpInput);
-    if (result.success) {
-      setEmailOtpVerified(true);
-      alert("Email verified!");
+  const handleVerifyEmailOtp = async () => {
+    try {
+      setLoadingOtpVerification(true);
+      const result = await verifyEmailOtp(email, emailOtpInput);
+      if (result.success) {
+        setEmailOtpVerified(true);
+        alert("Email verified!");
+      }
+    } catch (err) {
+      alert("Invalid or expired OTP.");
     }
-  } catch (err) {
-    alert("Invalid or expired OTP.");
-  }
-};
-
+  };
 
   const onSubmit = async (data: any) => {
     setError("");
+    // Prevent submission if OTP not verified
+    if (!emailOtpVerified) {
+      setError("Please verify your email before submitting.");
+      return;
+    }
 
     try {
-      const feedbackRef = collection(db, "feedbacks");
+      const feedbackRef = collection(db, "submissions");
 
       const q = query(
         feedbackRef,
@@ -101,10 +107,11 @@ const handleVerifyEmailOtp = async () => {
         return;
       }
 
-      await addDoc(feedbackRef, {
+      await setDoc(doc(db, "submissions", `${id}_${data.email}`), {
         ...data,
         formId: id,
         submittedAt: serverTimestamp(),
+        emailVerified: true,
       });
 
       setSubmitted(true);
@@ -143,10 +150,9 @@ const handleVerifyEmailOtp = async () => {
             className="w-full p-2 border rounded"
             {...register("name", { required: "Name is required" })}
           />
-         {errors.name && typeof errors.name.message === "string" && (
-  <p className="text-red-500">{errors.name.message}</p>
-)}
-
+          {errors.name && typeof errors.name.message === "string" && (
+            <p className="text-red-500">{errors.name.message}</p>
+          )}
         </div>
 
         {/* <div>
@@ -168,58 +174,58 @@ const handleVerifyEmailOtp = async () => {
 
         </div> */}
         <div>
-  <label>Email</label>
-  <input
-    type="email"
-    className="w-full p-2 border rounded"
-    {...register("email", {
-      required: "Email is required",
-      pattern: {
-        value: /^\S+@\S+$/i,
-        message: "Invalid email format",
-      },
-    })}
-  />
-  {errors.email && (
-    <p className="text-red-500">{errors.email.message as string}</p>
-  )}
+          <label>Email</label>
+          <input
+            type="email"
+            className="w-full p-2 border rounded"
+            {...register("email", {
+              required: "Email is required",
+              pattern: {
+                value: /^\S+@\S+$/i,
+                message: "Invalid email format",
+              },
+            })}
+          />
+          {errors.email && (
+            <p className="text-red-500">{errors.email.message as string}</p>
+          )}
 
-  {!emailOtpSent && (
-    <button
-      type="button"
-      className="mt-2 text-sm text-blue-600 underline cursor-pointer"
-      onClick={handleSendOtp}
-      disabled={loadingOtp || !email}
-    >
-      {loadingOtp ? "Sending..." : "Send OTP"}
-    </button>
-  )}
+          {!emailOtpSent && (
+            <button
+              type="button"
+              className={`mt-2 text-sm text-blue-600 underline  ${
+                !email ? "cursor-not-allowed" : "cursor-pointer"
+              }`}
+              onClick={handleSendOtp}
+              disabled={loadingOtp || !email}
+            >
+              {loadingOtp ? "Sending..." : "Send OTP"}
+            </button>
+          )}
 
-  {emailOtpSent && !emailOtpVerified && (
-  <>
-    <input
-      type="text"
-      placeholder="Enter OTP"
-      className="w-full mt-2 p-2 border rounded"
-      value={emailOtpInput}
-      onChange={(e) => setEmailOtpInput(e.target.value)}
-    />
-    <button
-      type="button"
-      className="mt-2 text-sm text-green-600 underline cursor-pointer"
-      onClick={handleVerifyEmailOtp}
-      disabled={!emailOtpInput}
-    >
-      Verify OTP
-    </button>
-  </>
-)}
-{emailOtpVerified && (
-  <p className="text-green-600 text-sm mt-1">Email verified ✅</p>
-)}
-
-</div>
-
+          {emailOtpSent && !emailOtpVerified && (
+            <>
+              <input
+                type="text"
+                placeholder="Enter OTP"
+                className="w-full mt-2 p-2 border rounded"
+                value={emailOtpInput}
+                onChange={(e) => setEmailOtpInput(e.target.value)}
+              />
+              <button
+                type="button"
+                className={`mt-2 text-sm text-green-600 underline cursor-pointer `}
+                onClick={handleVerifyEmailOtp}
+                disabled={!emailOtpInput}
+              >
+                {loadingOtpVerification ? "Verifying..." : "Verify OTP"}
+              </button>
+            </>
+          )}
+          {emailOtpVerified && (
+            <p className="text-green-600 text-sm mt-1">Email verified ✅</p>
+          )}
+        </div>
 
         <div>
           <label>Phone</label>
@@ -235,9 +241,8 @@ const handleVerifyEmailOtp = async () => {
             })}
           />
           {errors.phone && typeof errors.phone.message === "string" && (
-  <p className="text-red-500">{errors.phone.message}</p>
-)}
-
+            <p className="text-red-500">{errors.phone.message}</p>
+          )}
         </div>
 
         <div>
@@ -247,9 +252,8 @@ const handleVerifyEmailOtp = async () => {
             {...register("course", { required: "Course is required" })}
           />
           {errors.course && typeof errors.course.message === "string" && (
-  <p className="text-red-500">{errors.course.message}</p>
-)}
-
+            <p className="text-red-500">{errors.course.message}</p>
+          )}
         </div>
 
         <div>
@@ -295,12 +299,13 @@ const handleVerifyEmailOtp = async () => {
   )}
 </div> */}
 
-
         {error && <p className="text-red-500">{error}</p>}
 
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className={`bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 ${
+            (!emailOtpSent || !emailOtpVerified) && " cursor-not-allowed"
+          }`}
         >
           Submit Feedback
         </button>
