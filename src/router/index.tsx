@@ -8,7 +8,7 @@ import PublicRoute from "../components/PublicRoute";
 import AdminHome from "../pages/AdminHome"; // new dashboard page
 import FormBuilder from "../pages/FormBuilder"; // previously AdminDashboard
 import AdminLayout from "../pages/AdminLayout";
-
+import StudentFeedbackForm from "../pages/StudentFeedbackForm";
 
 export const router = createBrowserRouter([
   {
@@ -24,20 +24,27 @@ export const router = createBrowserRouter([
         ),
       },
       {
-  path: "admin",
-  element: <ProtectedRoute><AdminLayout /></ProtectedRoute>, // has <Outlet />
-  children: [
-    {
-      index: true, // matches /admin
-      element: <AdminHome />, // dashboard list, analytics etc.
-    },
-    {
-      path: "create",
-      element: <FormBuilder />, // your current form builder logic
-    },
-  ],
-},
-
+        path: "admin",
+        element: (
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        ), // has <Outlet />
+        children: [
+          {
+            index: true, // matches /admin
+            element: <AdminHome />, // dashboard list, analytics etc.
+          },
+          {
+            path: "create",
+            element: <FormBuilder />, // your current form builder logic
+          },
+        ],
+      },
+      {
+        path: "feedback/:id",
+        element: <StudentFeedbackForm />, // No auth protection, accessible via link
+      },
     ],
   },
 ]);

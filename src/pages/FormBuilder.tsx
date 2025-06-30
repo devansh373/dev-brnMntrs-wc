@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Editor from "../components/Editor"; // Adjust the path if needed
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "../firebase";
+import { addDoc, collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { db } from "../utils/firebase";
 import { v4 as uuidv4 } from "uuid";
 import TimePicker from "react-time-picker";
 import "react-time-picker/dist/TimePicker.css";
@@ -34,7 +34,8 @@ export default function FormBuilder() {
     console.log(formData);
 
     try {
-      await addDoc(collection(db, "workshops"), formData);
+      await setDoc(doc(db, "workshops", id), formData);
+
       alert("Workshop created successfully!");
 
       // Clear form
@@ -86,7 +87,8 @@ export default function FormBuilder() {
           <TimePicker
             onChange={(value) => {
               // value && console.log(formatTime(value));
-               value && setTime(formatTime(value))}}
+              value && setTime(formatTime(value));
+            }}
             value={time}
             disableClock
             format="hh:mm a"
