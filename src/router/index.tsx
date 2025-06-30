@@ -9,6 +9,7 @@ import AdminHome from "../pages/AdminHome"; // new dashboard page
 import FormBuilder from "../pages/FormBuilder"; // previously AdminDashboard
 import AdminLayout from "../pages/AdminLayout";
 import StudentFeedbackForm from "../pages/StudentFeedbackForm";
+import CertificateManager from "../pages/CertificateManager";
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +40,10 @@ export const router = createBrowserRouter([
             path: "create",
             element: <FormBuilder />, // your current form builder logic
           },
+          {
+            path:"certificate-template",
+            element:<CertificateManager/>
+          }
         ],
       },
       {

@@ -24,6 +24,14 @@ export default function AdminLayout() {
           >
             Create New Form
           </NavLink>
+          <NavLink
+            to="/admin/certificate-template"
+            className={({ isActive }) =>
+              isActive ? "text-blue-400 font-bold" : "text-white"
+            }
+          >
+            Certificate Template
+          </NavLink>
         </nav>
       </aside>
 
