@@ -13,85 +13,93 @@ import {
   deleteDoc,
   doc,
   Timestamp,
+  setDoc,
 } from "firebase/firestore";
+import TemplateEditor from "../components/TemplateEditor";
+import PdfPreview from "../components/PdfPreview";
 
 export default function CertificateManager() {
   const [file, setFile] = useState<File | null>(null);
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedTemplateUrl, setSelectedTemplateUrl] = useState("");
+  const [renderedPreviewUrl, setRenderedPreviewUrl] = useState("");
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) setFile(e.target.files[0]);
   };
 
-//   const uploadTemplate = async () => {
-//     if (!selectedWorkshop) return alert("Please select a workshop");
+  //   const uploadTemplate = async () => {
+  //     if (!selectedWorkshop) return alert("Please select a workshop");
 
-//     if (!file) return alert("Please choose a file");
+  //     if (!file) return alert("Please choose a file");
 
-//     setLoading(true);
-//     try {
-//       const storageRef = ref(storage, `certificateTemplates/${file.name}`);
-//       await uploadBytes(storageRef, file);
-//       const downloadURL = await getDownloadURL(storageRef);
+  //     setLoading(true);
+  //     try {
+  //       const storageRef = ref(storage, `certificateTemplates/${file.name}`);
+  //       await uploadBytes(storageRef, file);
+  //       const downloadURL = await getDownloadURL(storageRef);
 
-//       await addDoc(collection(db, "certificateTemplates"), {
-//         fileName: file.name,
-//         downloadURL,
-//         uploadedAt: Timestamp.now(),
-//       });
+  //       await addDoc(collection(db, "certificateTemplates"), {
+  //         fileName: file.name,
+  //         downloadURL,
+  //         uploadedAt: Timestamp.now(),
+  //       });
 
-//       setFile(null);
-//       fetchTemplates();
-//       alert("Template uploaded");
-//     } catch (error) {
-//       console.error("Upload error:", error);
-//       alert("Failed to upload");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
+  //       setFile(null);
+  //       fetchTemplates();
+  //       alert("Template uploaded");
+  //     } catch (error) {
+  //       console.error("Upload error:", error);
+  //       alert("Failed to upload");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
+  const uploadTemplate = async () => {
+    if (!file) return alert("Please choose a file");
+    if (!selectedWorkshop) return alert("Please select a workshop");
 
-const uploadTemplate = async () => {
-  if (!file) return alert("Please choose a file");
-  if (!selectedWorkshop) return alert("Please select a workshop");
+    setLoading(true);
+    try {
+      // Check if one already exists for this workshop
+      const snapshot = await getDocs(collection(db, "certificateTemplates"));
+      const existing = snapshot.docs.find(
+        (doc) => doc.data().workshopId === selectedWorkshop
+      );
 
-  setLoading(true);
-  try {
-    // Check if one already exists for this workshop
-    const snapshot = await getDocs(collection(db, "certificateTemplates"));
-    const existing = snapshot.docs.find(
-      (doc) => doc.data().workshopId === selectedWorkshop
-    );
+      // Upload file to Storage
+      const storageRef = ref(
+        storage,
+        `certificateTemplates/${selectedWorkshop}.pdf`
+      );
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
 
-    // Upload file to Storage
-    const storageRef = ref(storage, `certificateTemplates/${selectedWorkshop}.pdf`);
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
+      if (existing) {
+        // Replace existing template
+        await deleteDoc(doc(db, "certificateTemplates", existing.id));
+      }
 
-    if (existing) {
-      // Replace existing template
-      await deleteDoc(doc(db, "certificateTemplates", existing.id));
+      await addDoc(collection(db, "certificateTemplates"), {
+        workshopId: selectedWorkshop,
+        fileName: `${selectedWorkshop}.pdf`,
+        downloadURL,
+        uploadedAt: Timestamp.now(),
+      });
+
+      setFile(null);
+      fetchTemplates();
+      alert("Template uploaded");
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to upload");
+    } finally {
+      setLoading(false);
     }
-
-    await addDoc(collection(db, "certificateTemplates"), {
-      workshopId: selectedWorkshop,
-      fileName: `${selectedWorkshop}.pdf`,
-      downloadURL,
-      uploadedAt: Timestamp.now(),
-    });
-
-    setFile(null);
-    fetchTemplates();
-    alert("Template uploaded");
-  } catch (error) {
-    console.error("Upload error:", error);
-    alert("Failed to upload");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const fetchTemplates = async () => {
     const snapshot = await getDocs(collection(db, "certificateTemplates"));
@@ -113,15 +121,15 @@ const uploadTemplate = async () => {
   };
 
   const [workshops, setWorkshops] = useState<any[]>([]);
-const [selectedWorkshop, setSelectedWorkshop] = useState<string>("");
+  const [selectedWorkshop, setSelectedWorkshop] = useState<string>("");
 
-const fetchWorkshops = async () => {
-  const snapshot = await getDocs(collection(db, "workshops"));
-  const data = snapshot.docs
-    .filter(doc => doc.data().isActive)
-    .map(doc => ({ id: doc.id, ...doc.data() }));
-  setWorkshops(data);
-};
+  const fetchWorkshops = async () => {
+    const snapshot = await getDocs(collection(db, "workshops"));
+    const data = snapshot.docs
+      .filter((doc) => doc.data().isActive)
+      .map((doc) => ({ id: doc.id, ...doc.data() }));
+    setWorkshops(data);
+  };
 
   useEffect(() => {
     fetchWorkshops();
@@ -133,19 +141,18 @@ const fetchWorkshops = async () => {
       <h1 className="text-xl font-bold mb-4">Certificate Templates</h1>
 
       <label className="block mb-1">Select Workshop</label>
-<select
-  className="w-full p-2 border rounded mb-4"
-  value={selectedWorkshop}
-  onChange={(e) => setSelectedWorkshop(e.target.value)}
->
-  <option value="">-- Select Workshop --</option>
-  {workshops.map((ws) => (
-    <option key={ws.id} value={ws.id}>
-      {ws.workshopName} ({ws.college})
-    </option>
-  ))}
-</select>
-
+      <select
+        className="w-full p-2 border rounded mb-4"
+        value={selectedWorkshop}
+        onChange={(e) => setSelectedWorkshop(e.target.value)}
+      >
+        <option value="">-- Select Workshop --</option>
+        {workshops.map((ws) => (
+          <option key={ws.id} value={ws.id}>
+            {ws.workshopName} ({ws.college})
+          </option>
+        ))}
+      </select>
 
       <input type="file" accept="application/pdf" onChange={handleFileChange} />
       <button
@@ -158,19 +165,68 @@ const fetchWorkshops = async () => {
 
       <ul className="mt-6 space-y-2">
         {templates.map((tpl) => (
-          <li key={tpl.id} className="flex justify-between items-center border p-2 rounded">
-            <a href={tpl.downloadURL} target="_blank" rel="noreferrer" className="text-blue-600">
+          <li
+            key={tpl.id}
+            className="flex justify-between items-center border p-2 rounded"
+          >
+            <a
+              href={tpl.downloadURL}
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-600"
+            >
               {tpl.fileName}
             </a>
-            <button
-              onClick={() => deleteTemplate(tpl)}
-              className="text-red-600 hover:underline"
-            >
-              Delete
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedTemplateUrl(tpl.downloadURL)}
+                className="text-blue-600 underline text-sm"
+              >
+                Edit Fields
+              </button>
+              <button
+                onClick={() => deleteTemplate(tpl)}
+                className="text-red-600 hover:underline text-sm"
+              >
+                Delete
+              </button>
+            </div>
           </li>
         ))}
       </ul>
+
+      
+        {selectedTemplateUrl && (
+  <PdfPreview
+    pdfUrl={selectedTemplateUrl}
+    onRendered={(imageUrl) => {
+      // Once we have the PNG, pass to TemplateEditor
+      setRenderedPreviewUrl(imageUrl); // set this state at top
+    }}
+  />
+)}
+
+{renderedPreviewUrl && (
+  <TemplateEditor
+    backgroundImageUrl={renderedPreviewUrl}
+    onSave={async (positions) => {
+      const templateId = templates.find(
+        (t) => t.workshopId === selectedWorkshop
+      )?.id;
+
+      if (!templateId) return alert("Template not found");
+
+      await setDoc(doc(db, "certificateTemplates", templateId), {
+        ...templates.find((t) => t.id === templateId),
+        fieldPositions: positions,
+      });
+
+      alert("Field positions saved!");
+    }}
+  />
+)}
+
+      
     </div>
   );
 }

@@ -18,7 +18,7 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import { auth, db } from "../utils/firebase";
+import { auth, db, storage } from "../utils/firebase";
 import { useForm } from "react-hook-form";
 import { sendEmailOtp } from "../utils/sendOtp";
 import { verifyEmailOtp } from "../utils/verifyOtp";
@@ -27,6 +27,8 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
 } from "firebase/auth";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { generateCertificate } from "../utils/generateCertificate";
 
 export default function FeedbackForm() {
   const { id } = useParams();
@@ -49,6 +51,7 @@ export default function FeedbackForm() {
   const [loadingPhoneOtp, setLoadingPhoneOtp] = useState(false);
   const [loadingPhoneVerification, setLoadingPhoneVerification] =
     useState(false);
+  const [url, setUrl] = useState("");
 
   // const auth = getAuth();
 
@@ -177,15 +180,15 @@ export default function FeedbackForm() {
   const onSubmit = async (data: any) => {
     setError("");
 
-    if (!emailOtpVerified) {
-      setError("Please verify your email before submitting.");
-      return;
-    }
+    // if (!emailOtpVerified) {
+    //   setError("Please verify your email before submitting.");
+    //   return;
+    // }
 
-    if (!phoneOtpVerified) {
-      setError("Please verify your phone before submitting.");
-      return;
-    }
+    // if (!phoneOtpVerified) {
+    //   setError("Please verify your phone before submitting.");
+    //   return;
+    // }
 
     try {
       const feedbackRef = collection(db, "submissions");
@@ -199,16 +202,77 @@ export default function FeedbackForm() {
         setError("You have already submitted this form.");
         return;
       }
-
-      await setDoc(doc(db, "submissions", `${id}_${data.email}`), {
-        ...data,
+      console.log(formData);
+      console.log("🔥 data to be saved:", {
         formId: id,
-        submittedAt: serverTimestamp(),
+        submittedAt: "timestamp",
         emailVerified: true,
         phoneVerified: true,
+        certificateURL: "blob_url",
+        workshopName: formData.workshopName,
+        college: formData.college,
+        date: formData.date,
+        time: formData.time,
+        ...data,
       });
 
-      setSubmitted(true);
+      try {
+        const templateSnap = await getDocs(
+          query(
+            collection(db, "certificateTemplates"),
+            where("workshopId", "==", id)
+          )
+        );
+        if (templateSnap.empty) {
+          console.warn("No template found for this workshop");
+          return;
+        }
+
+        const templateDoc = templateSnap.docs[0];
+        const templateData = templateDoc.data();
+
+        const pdfBytes = await generateCertificate(
+          templateData.downloadURL,
+          templateData.fieldPositions || [],
+          {
+            name: data.name,
+            college: formData.college,
+            date: formData.date,
+            workshopName: formData.workshopName,
+          }
+        );
+        const blob = new Blob([new Uint8Array(pdfBytes)], {
+          type: "application/pdf",
+        });
+        // const url = URL.createObjectURL(blob);
+        // setUrl(url);
+
+        const certRef = ref(storage, `certificates/${id}_${data.email}.pdf`);
+        await uploadBytes(
+          certRef,
+          new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" })
+        );
+        // ✅ Get download URL
+        const url = await getDownloadURL(certRef);
+
+        // ✅ Save full submission data along with certificateURL
+        await setDoc(doc(db, "submissions", `${id}_${data.email}`), {
+          formId: id,
+          submittedAt: serverTimestamp(),
+          emailVerified: true,
+          phoneVerified: true,
+          certificateURL: url,
+          workshopName: formData.workshopName,
+          college: formData.college,
+          date: formData.date,
+          time: formData.time,
+          ...data,
+        });
+        setSubmitted(true);
+        console.log("Certificate uploaded for:", data.email);
+      } catch (genErr) {
+        console.error("Certificate generation failed", genErr);
+      }
     } catch (err) {
       console.error("Submission error:", err);
       setError("Submission failed. Try again later.");
@@ -226,6 +290,17 @@ export default function FeedbackForm() {
     return (
       <div className="text-center text-green-600 mt-10">
         Thank you for your feedback!
+        <p className="text-gray-700 mt-2">
+          Your certificate will be sent to your registered email and WhatsApp
+          number shortly.
+        </p>
+        {/* <button
+          onClick={() => {
+            window.open(url);
+          }}
+        >
+          Preview
+        </button> */}
       </div>
     );
 

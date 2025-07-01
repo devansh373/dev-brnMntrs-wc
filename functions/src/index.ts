@@ -1,3 +1,4 @@
 import {sendEmailOtp} from './sendOtp'
 import {verifyEmailOtp} from './verifyOtp'
-export {sendEmailOtp,verifyEmailOtp}
+import { sendCertificateEmail } from './sendCertificateEmail'
+export {sendEmailOtp,verifyEmailOtp,sendCertificateEmail}

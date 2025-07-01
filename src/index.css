@@ -3,3 +3,9 @@
 .react-time-picker {
   @apply border border-gray-300 p-2 rounded w-full;
 }
+html,body,.app{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
