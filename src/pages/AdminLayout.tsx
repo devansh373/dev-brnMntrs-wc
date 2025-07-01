@@ -32,6 +32,14 @@ export default function AdminLayout() {
           >
             Certificate Template
           </NavLink>
+          <NavLink
+            to="/admin/check-submissions"
+            className={({ isActive }) =>
+              isActive ? "text-blue-400 font-bold" : "text-white"
+            }
+          >
+            Check Submissions
+          </NavLink>
         </nav>
       </aside>
 

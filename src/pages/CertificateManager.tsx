@@ -24,7 +24,9 @@ export default function CertificateManager() {
   const [loading, setLoading] = useState(false);
   const [selectedTemplateUrl, setSelectedTemplateUrl] = useState("");
   const [renderedPreviewUrl, setRenderedPreviewUrl] = useState("");
-
+  const [workshops, setWorkshops] = useState<any[]>([]);
+  const [selectedWorkshop, setSelectedWorkshop] = useState<string>("");
+  const [showContainer, setShowContainer] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) setFile(e.target.files[0]);
@@ -120,9 +122,6 @@ export default function CertificateManager() {
     }
   };
 
-  const [workshops, setWorkshops] = useState<any[]>([]);
-  const [selectedWorkshop, setSelectedWorkshop] = useState<string>("");
-
   const fetchWorkshops = async () => {
     const snapshot = await getDocs(collection(db, "workshops"));
     const data = snapshot.docs
@@ -154,11 +153,19 @@ export default function CertificateManager() {
         ))}
       </select>
 
-      <input type="file" accept="application/pdf" onChange={handleFileChange} />
+        <label htmlFor="file" className=" cursor-pointer border border-blue-500 px-2 py-1.5 rounded-lg text-white  bg-blue-950">Choose File</label>
+      <input
+      id="file"
+        type="file"
+        accept="application/pdf"
+        onChange={handleFileChange}
+        
+        hidden
+      />
       <button
         onClick={uploadTemplate}
         disabled={loading}
-        className="ml-2 px-4 py-1 bg-blue-600 text-white rounded"
+        className="ml-2 px-4 py-1 bg-blue-600 text-white rounded cursor-pointer"
       >
         {loading ? "Uploading..." : "Upload"}
       </button>
@@ -179,14 +186,17 @@ export default function CertificateManager() {
             </a>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setSelectedTemplateUrl(tpl.downloadURL)}
-                className="text-blue-600 underline text-sm"
+                onClick={() => {
+                  setSelectedTemplateUrl(tpl.downloadURL);
+                  setShowContainer(true);
+                }}
+                className="text-blue-600 underline text-sm cursor-pointer"
               >
                 Edit Fields
               </button>
               <button
                 onClick={() => deleteTemplate(tpl)}
-                className="text-red-600 hover:underline text-sm"
+                className="text-red-600 hover:underline text-sm cursor-pointer"
               >
                 Delete
               </button>
@@ -195,38 +205,37 @@ export default function CertificateManager() {
         ))}
       </ul>
 
-      
-        {selectedTemplateUrl && (
-  <PdfPreview
-    pdfUrl={selectedTemplateUrl}
-    onRendered={(imageUrl) => {
-      // Once we have the PNG, pass to TemplateEditor
-      setRenderedPreviewUrl(imageUrl); // set this state at top
-    }}
-  />
-)}
+      {selectedTemplateUrl && (
+        <PdfPreview
+          pdfUrl={selectedTemplateUrl}
+          onRendered={(imageUrl) => {
+            // Once we have the PNG, pass to TemplateEditor
+            setRenderedPreviewUrl(imageUrl); // set this state at top
+          }}
+        />
+      )}
 
-{renderedPreviewUrl && (
-  <TemplateEditor
-    backgroundImageUrl={renderedPreviewUrl}
-    onSave={async (positions) => {
-      const templateId = templates.find(
-        (t) => t.workshopId === selectedWorkshop
-      )?.id;
+      {renderedPreviewUrl && showContainer && (
+        <TemplateEditor
+          showContainer={showContainer}
+          setShowContainer={setShowContainer}
+          backgroundImageUrl={renderedPreviewUrl}
+          onSave={async (positions) => {
+            const templateId = templates.find(
+              (t) => t.workshopId === selectedWorkshop
+            )?.id;
 
-      if (!templateId) return alert("Template not found");
+            if (!templateId) return alert("Template not found");
 
-      await setDoc(doc(db, "certificateTemplates", templateId), {
-        ...templates.find((t) => t.id === templateId),
-        fieldPositions: positions,
-      });
+            await setDoc(doc(db, "certificateTemplates", templateId), {
+              ...templates.find((t) => t.id === templateId),
+              fieldPositions: positions,
+            });
 
-      alert("Field positions saved!");
-    }}
-  />
-)}
-
-      
+            alert("Field positions saved!");
+          }}
+        />
+      )}
     </div>
   );
 }

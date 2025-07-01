@@ -10,6 +10,7 @@ import FormBuilder from "../pages/FormBuilder"; // previously AdminDashboard
 import AdminLayout from "../pages/AdminLayout";
 import StudentFeedbackForm from "../pages/StudentFeedbackForm";
 import CertificateManager from "../pages/CertificateManager";
+import CheckSubmissions from "../pages/CheckSubmissions";
 
 export const router = createBrowserRouter([
   {
@@ -43,6 +44,10 @@ export const router = createBrowserRouter([
           {
             path:"certificate-template",
             element:<CertificateManager/>
+          },
+          {
+            path:"check-submissions",
+            element:<CheckSubmissions/>
           }
         ],
       },

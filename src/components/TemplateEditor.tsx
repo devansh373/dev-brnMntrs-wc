@@ -99,6 +99,8 @@ import { useEffect, useState } from "react";
 interface TemplateEditorProps {
   backgroundImageUrl: string;
   onSave: (positions: { field: string; x: number; y: number }[]) => void;
+  showContainer: boolean;
+  setShowContainer: (value: boolean) => void;
 }
 
 const fields = ["name", "college", "workshopName", "date"];
@@ -108,6 +110,8 @@ type Position = { x: number; y: number };
 export default function TemplateEditor({
   backgroundImageUrl,
   onSave,
+  showContainer,
+  setShowContainer,
 }: TemplateEditorProps) {
   const [positions, setPositions] = useState<Record<string, Position>>({});
 
@@ -125,34 +129,36 @@ export default function TemplateEditor({
 
     setPositions((prev) => {
       const prevPos = prev[id];
-      console.log(Math.floor(prevPos.x + delta.x), (prevPos.y + delta.y));
+      console.log(Math.floor(prevPos.x + delta.x), prevPos.y + delta.y);
       return {
         ...prev,
         [id]: {
           x: Math.floor(prevPos.x + delta.x),
-          y: (Math.floor(prevPos.y + delta.y)),
+          y: Math.floor(prevPos.y + delta.y),
         },
       };
     });
   };
 
   return (
-    <div style={{
+    <div
+      style={{
         width: "100vw",
-          height: "100vh",
-          position: "absolute",
-          left:0,
-          top:0,
-          zIndex:10,
-    }}>
+        height: "100vh",
+        position: "absolute",
+        left: 0,
+        top: 0,
+        zIndex: 10,
+      }}
+    >
       <div
         style={{
           width: 842,
           height: 595,
-        //   position: "absolute",
-        //   left:0,
-        //   top:0,
-        //   zIndex:10,
+          //   position: "absolute",
+          //   left:0,
+          //   top:0,
+          //   zIndex:10,
           //   transform:"scaleX(-1)",
           backgroundImage: `url(${backgroundImageUrl})`,
           backgroundSize: "contain",
@@ -181,14 +187,20 @@ export default function TemplateEditor({
         onClick={() => {
           const output = fields.map((field) => ({
             field,
-            x: field==="name"?(positions[field].x-100):(positions[field].x),
-            y: 595-positions[field].y,
+            x: field === "name" ? positions[field].x - 100 : positions[field].x,
+            y: 595 - positions[field].y,
           }));
           onSave(output);
         }}
-        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded absolute right-0 top-0"
+        className=" bg-blue-600 text-white px-4 py-2 rounded absolute right-[45%] bottom-4 cursor-pointer"
       >
         Save Field Positions
+      </button>
+      <button
+        className="bg-blue-600 text-white px-4 py-2 rounded absolute right-10 top-4 cursor-pointer"
+        onClick={() => setShowContainer(false)}
+      >
+        X
       </button>
     </div>
   );
