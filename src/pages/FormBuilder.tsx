@@ -7,6 +7,7 @@ import TimePicker from "react-time-picker";
 import "react-time-picker/dist/TimePicker.css";
 import "react-clock/dist/Clock.css";
 import { formatTime } from "../utils/helper";
+import { Link } from "react-router-dom";
 
 export default function FormBuilder() {
   const [college, setCollege] = useState("");
@@ -15,6 +16,9 @@ export default function FormBuilder() {
   const [time, setTime] = useState<string>("10:00 AM");
   const [instructions, setInstructions] = useState(""); // <== Editor data
   const [formStatus, setFormStatus] = useState(false);
+  const [formURL, setFormURL] = useState("");
+const [copied, setCopied] = useState(false);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +39,8 @@ export default function FormBuilder() {
 
     try {
       await setDoc(doc(db, "workshops", id), formData);
+      setFormURL(formData.formURL);
+
 
       alert("Workshop created successfully!");
 
@@ -63,6 +69,7 @@ export default function FormBuilder() {
         className="w-full p-2 border mb-2"
         value={college}
         onChange={(e) => setCollege(e.target.value)}
+        required
       />
 
       <label>Workshop Name</label>
@@ -70,6 +77,7 @@ export default function FormBuilder() {
         className="w-full p-2 border mb-2"
         value={workshopName}
         onChange={(e) => setWorkshopName(e.target.value)}
+        required
       />
 
       <div className="flex gap-4">
@@ -80,6 +88,7 @@ export default function FormBuilder() {
             className="w-full p-2 border mb-2"
             value={date}
             onChange={(e) => setDate(e.target.value)}
+            required
           />
         </div>
         <div className="flex-1 min-w-[100px]">
@@ -94,6 +103,7 @@ export default function FormBuilder() {
             format="hh:mm a"
             locale="en-US" // ✅ Forces 12-hour AM/PM format
             className="w-full mb-2"
+            required
           />
         </div>
       </div>
@@ -120,6 +130,23 @@ export default function FormBuilder() {
       >
         Create Form
       </button>
+      {formURL && (
+  <div className="mt-4 flex items-center gap-4">
+    <Link to={formURL} className="text-sm text-gray-700 truncate">{formURL}</Link>
+    <button
+      type="button"
+      onClick={async () => {
+        await navigator.clipboard.writeText(formURL);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }}
+      className="bg-gray-800 text-white px-3 py-1 rounded"
+    >
+      {copied ? "Copied!" : "Copy Link"}
+    </button>
+  </div>
+)}
+
     </form>
   );
 }

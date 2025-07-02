@@ -9,7 +9,7 @@ export async function generateCertificate(
   const pdfDoc = await PDFDocument.load(existingPdfBytes);
   const page = pdfDoc.getPages()[0];
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const fontForName = await pdfDoc.embedFont(StandardFonts.CourierBoldOblique);
+  const fontCourier = await pdfDoc.embedFont(StandardFonts.CourierBoldOblique);
 
   fieldPositions.forEach(({ field, x, y }) => {
     const text = data[field] || "";
@@ -17,7 +17,7 @@ export async function generateCertificate(
       x,
       y,
       size: field==="name"?56:16,
-      font:fontForName,
+      font:field==="name"?font:fontCourier,
       color: rgb(50/255 ,0/255, 171/255),
     });
   });

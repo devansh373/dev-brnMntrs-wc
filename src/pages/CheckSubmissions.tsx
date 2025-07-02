@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  updateDoc,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { db } from "../utils/firebase";
 import Papa from "papaparse";
+import { Link } from "react-router-dom";
 
 export default function CheckSubmissions() {
   const [workshops, setWorkshops] = useState<any[]>([]);
@@ -10,43 +19,54 @@ export default function CheckSubmissions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [ratingFilter, setRatingFilter] = useState("");
   const [courseFilter, setCourseFilter] = useState("");
+  const [formURL, setFormURL] = useState("");
 
   useEffect(() => {
     const fetchWorkshops = async () => {
       const snapshot = await getDocs(collection(db, "workshops"));
       const active = snapshot.docs
-        .filter((doc) => doc.data().isActive)
+        // .filter((doc) => doc.data().isActive)
         .map((doc) => ({ id: doc.id, ...doc.data() }));
       setWorkshops(active);
     };
     fetchWorkshops();
   }, []);
 
+  useEffect(()=>{
+    fetchFormURL();
+  },[selectedWorkshop])
   const handleToggleWorkshopStatus = async () => {
-  if (!selectedWorkshop) return;
+    if (!selectedWorkshop) return;
 
-  const workshopRef = doc(db, "workshops", selectedWorkshop);
-  const current = workshops.find((w) => w.id === selectedWorkshop);
-  const newStatus = !current?.isActive;
+    const workshopRef = doc(db, "workshops", selectedWorkshop);
+    const current = workshops.find((w) => w.id === selectedWorkshop);
+    const newStatus = !current?.isActive;
 
-  try {
-    await updateDoc(workshopRef, {
-      isActive: newStatus,
-    });
+    try {
+      await updateDoc(workshopRef, {
+        isActive: newStatus,
+      });
 
-    setWorkshops((prev) =>
-      prev.map((w) =>
-        w.id === selectedWorkshop ? { ...w, isActive: newStatus } : w
-      )
-    );
-    alert(`Workshop is now ${newStatus ? "Active" : "Inactive"}`);
-  } catch (err) {
-    console.error("Failed to update workshop status:", err);
-    alert("Failed to toggle form status");
-  }
-};
+      setWorkshops((prev) =>
+        prev.map((w) =>
+          w.id === selectedWorkshop ? { ...w, isActive: newStatus } : w
+        )
+      );
+      alert(`Workshop is now ${newStatus ? "Active" : "Inactive"}`);
+    } catch (err) {
+      console.error("Failed to update workshop status:", err);
+      alert("Failed to toggle form status");
+    }
+  };
 
-
+  const fetchFormURL = async () => {
+    if (!selectedWorkshop) return;
+    const snapshot = await getDoc(doc(db, "workshops", selectedWorkshop));
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      setFormURL(data?.formURL || "");
+    }
+  };
   const fetchSubmissions = async () => {
     if (!selectedWorkshop) return;
 
@@ -124,7 +144,10 @@ export default function CheckSubmissions() {
       <select
         className="p-2 border rounded mb-4 w-full"
         value={selectedWorkshop}
-        onChange={(e) => setSelectedWorkshop(e.target.value)}
+        onChange={(e) => {
+          setSelectedWorkshop(e.target.value);
+          
+        }}
       >
         <option value="">-- Select Workshop --</option>
         {workshops.map((ws) => (
@@ -143,20 +166,28 @@ export default function CheckSubmissions() {
       </button>
 
       {selectedWorkshop && (
-  <button
-    onClick={handleToggleWorkshopStatus}
-    className={`mb-4 ml-2 px-4 py-2 rounded ${
-      workshops.find((w) => w.id === selectedWorkshop)?.isActive
-        ? "bg-red-600 text-white"
-        : "bg-green-600 text-white"
-    }`}
-  >
-    {workshops.find((w) => w.id === selectedWorkshop)?.isActive
-      ? "Deactivate Form"
-      : "Activate Form"}
-  </button>
+        <button
+          onClick={handleToggleWorkshopStatus}
+          className={`mb-4 ml-2 px-4 py-2 rounded ${
+            workshops.find((w) => w.id === selectedWorkshop)?.isActive
+              ? "bg-red-600 text-white"
+              : "bg-green-600 text-white"
+          }`}
+        >
+          {workshops.find((w) => w.id === selectedWorkshop)?.isActive
+            ? "Deactivate Form"
+            : "Activate Form"}
+        </button>
+      )}
+      {/* {workshops.map((ws) => ws.id === selectedWorkshop && <p>{ws.formURL}</p>)} */}
+      {formURL && (
+  <div className="mb-4 text-sm">
+    <span className="font-semibold">Form Link:</span>{" "}
+    <Link to={formURL} target="_blank" className="text-blue-600 underline">
+      {formURL}
+    </Link>
+  </div>
 )}
-
 
       <div className="flex flex-wrap gap-4 mb-4">
         <input
@@ -190,13 +221,18 @@ export default function CheckSubmissions() {
       </div>
 
       {filteredSubmissions.length > 0 && (
-  <div className="mb-4 p-4 bg-gray-100 rounded border text-sm md:text-base flex flex-wrap gap-6">
-    <div><strong>Total:</strong> {total}</div>
-    <div><strong>Average Rating:</strong> {averageRating.toFixed(1)}</div>
-    <div><strong>Certificates Sent:</strong> {certsSent}</div>
-  </div>
-)}
-
+        <div className="mb-4 p-4 bg-gray-100 rounded border text-sm md:text-base flex flex-wrap gap-6">
+          <div>
+            <strong>Total:</strong> {total}
+          </div>
+          <div>
+            <strong>Average Rating:</strong> {averageRating.toFixed(1)}
+          </div>
+          <div>
+            <strong>Certificates Sent:</strong> {certsSent}
+          </div>
+        </div>
+      )}
 
       {filteredSubmissions.length > 0 && (
         <>

@@ -38,7 +38,7 @@ export default function AdminLayout() {
               isActive ? "text-blue-400 font-bold" : "text-white"
             }
           >
-            Check Submissions
+            Check Workshops
           </NavLink>
         </nav>
       </aside>

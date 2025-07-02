@@ -187,8 +187,13 @@ export default function TemplateEditor({
         onClick={() => {
           const output = fields.map((field) => ({
             field,
-            x: field === "name" ? positions[field].x - 100 : positions[field].x,
-            y: 595 - positions[field].y,
+            x:
+              field === "name"
+                ? positions[field].x - 170
+                : field === "workshopName"
+                ? positions[field].x + 10
+                : positions[field].x,
+            y: 575 - positions[field].y,
           }));
           onSave(output);
         }}

@@ -1,11 +1,17 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const App = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth(); // optional: hide login button when logged in
+  const { user } = useAuth(); 
+
+  useEffect(()=>{
+    if(user && location.pathname==="/"){
+      navigate("/admin")
+    }
+  },[location.pathname,user])
 
   return (
     <div>

@@ -53,7 +53,7 @@ export default function FeedbackForm() {
     useState(false);
   const [url, setUrl] = useState("");
 
-  // const auth = getAuth();
+  const auth2 = getAuth();
 
   const {
     register,
@@ -122,7 +122,7 @@ export default function FeedbackForm() {
   //   }
   // };
 
-  const setupRecaptcha = () => {
+  const setupRecaptcha = async() => {
     if (window.recaptchaVerifier) {
       window.recaptchaVerifier.clear();
     }
@@ -138,28 +138,28 @@ export default function FeedbackForm() {
       }
     );
 
-    window.recaptchaVerifier.render();
+    return window.recaptchaVerifier.render();
   };
 
   const handleSendPhoneOtp = async () => {
-    try {
-      setLoadingPhoneOtp(true);
-      setupRecaptcha();
-      const appVerifier = window.recaptchaVerifier;
-      const confirmationResult = await signInWithPhoneNumber(
-        auth,
-        `+91${phone}`,
-        appVerifier
-      );
-      window.confirmationResult = confirmationResult;
-      setPhoneOtpSent(true);
-      alert("OTP sent to phone");
-    } catch (error) {
-      console.error(error);
-      alert("Failed to send phone OTP");
-    } finally {
-      setLoadingPhoneOtp(false);
-    }
+    setLoadingPhoneOtp(true);
+    await setupRecaptcha();
+    const appVerifier = window.recaptchaVerifier;
+    signInWithPhoneNumber(auth, `+91${phone}`, appVerifier)
+      .then((confirmationResult) => {
+        console.log(confirmationResult);
+        window.confirmationResult = confirmationResult;
+        setPhoneOtpSent(true);
+        alert("OTP sent to phone");
+      })
+      .catch((error) => {
+        console.error(error);
+        alert("Failed to send phone OTP");
+        
+      })
+      .finally(() => {
+        setLoadingPhoneOtp(false);
+      });
   };
 
   const handleVerifyPhoneOtp = async () => {
