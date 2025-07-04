@@ -22,11 +22,14 @@ export default function CertificateManager() {
   const [file, setFile] = useState<File | null>(null);
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingEditFields, setLoadingEditFields] = useState(false);
+  const [loadingDeleteTemplate, setLoadingDeleteTemplate] = useState(false);
   const [selectedTemplateUrl, setSelectedTemplateUrl] = useState("");
   const [renderedPreviewUrl, setRenderedPreviewUrl] = useState("");
   const [workshops, setWorkshops] = useState<any[]>([]);
   const [selectedWorkshop, setSelectedWorkshop] = useState<string>("");
   const [showContainer, setShowContainer] = useState(false);
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) setFile(e.target.files[0]);
@@ -107,14 +110,17 @@ export default function CertificateManager() {
     const snapshot = await getDocs(collection(db, "certificateTemplates"));
     const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     setTemplates(data);
+    setLoadingEditFields(false)
   };
 
   const deleteTemplate = async (template: any) => {
     if (!window.confirm("Delete this template?")) return;
     try {
+      setLoadingDeleteTemplate(true)
       const fileRef = ref(storage, `certificateTemplates/${template.fileName}`);
       await deleteObject(fileRef);
       await deleteDoc(doc(db, "certificateTemplates", template.id));
+      setLoadingDeleteTemplate(false)
       fetchTemplates();
     } catch (error) {
       console.error("Delete error:", error);
@@ -134,6 +140,7 @@ export default function CertificateManager() {
     fetchWorkshops();
     fetchTemplates();
   }, []);
+  
 
   return (
     <div className="p-6 max-w-xl mx-auto">
@@ -187,6 +194,7 @@ export default function CertificateManager() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
+                  // setLoadingEditFields(true)
                   setSelectedTemplateUrl(tpl.downloadURL);
                   setShowContainer(true);
                 }}
@@ -214,8 +222,9 @@ export default function CertificateManager() {
           }}
         />
       )}
+      {loadingEditFields && <p>Loading...</p>}
 
-      {renderedPreviewUrl && showContainer && (
+      {renderedPreviewUrl && showContainer && !loadingEditFields &&(
         <TemplateEditor
           showContainer={showContainer}
           setShowContainer={setShowContainer}
@@ -231,6 +240,8 @@ export default function CertificateManager() {
               ...templates.find((t) => t.id === templateId),
               fieldPositions: positions,
             });
+            
+
 
             alert("Field positions saved!");
           }}

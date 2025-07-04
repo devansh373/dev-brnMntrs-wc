@@ -15,7 +15,7 @@ const App = () => {
 
   return (
     <div>
-      <header className="p-4 flex justify-between items-center bg-gray-800 text-white">
+      <header className="p-4 flex justify-between items-center bg-gray-800 text-white fixed top-0 w-screen">
         <h1 className="text-xl font-bold">Workshop System</h1>
 
         {!user && location.pathname === "/" && (
@@ -29,7 +29,7 @@ const App = () => {
       </header>
 
       {/* Render the page-specific component */}
-      <main className="p-4">
+      <main className="mt-14">
         <Outlet />
       </main>
     </div>
