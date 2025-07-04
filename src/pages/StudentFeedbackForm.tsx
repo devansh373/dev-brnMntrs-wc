@@ -56,10 +56,12 @@ export default function FeedbackForm() {
   const [error, setError] = useState("");
 
   const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailCooldown, setEmailCooldown] = useState(0);
   const [emailOtpInput, setEmailOtpInput] = useState("");
   const [emailOtpVerified, setEmailOtpVerified] = useState(false);
 
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneCooldown, setPhoneCooldown] = useState(0);
   const [phoneOtpInput, setPhoneOtpInput] = useState("");
   const [phoneOtpVerified, setPhoneOtpVerified] = useState(false);
 
@@ -67,7 +69,7 @@ export default function FeedbackForm() {
   const [loadingOtpVerification, setLoadingOtpVerification] = useState(false);
   const [loadingPhoneOtp, setLoadingPhoneOtp] = useState(false);
   const [loadingPhoneVerification, setLoadingPhoneVerification] =
-  useState(false);
+    useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const savedDraft = localStorage.getItem(`feedback_draft_${id}`);
@@ -131,6 +133,15 @@ export default function FeedbackForm() {
     };
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setEmailCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      setPhoneCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const setupRecaptcha = async () => {
     if (window.recaptchaVerifier) {
       window.recaptchaVerifier.clear();
@@ -148,13 +159,33 @@ export default function FeedbackForm() {
     return window.recaptchaVerifier.render();
   };
 
+  // const handleSendOtp = async () => {
+  //   try {
+  //     if(!watchedFields.email) setError("Please provide the email.")
+  //     setLoadingOtp(true);
+  //     const result = await sendEmailOtp(watchedFields.email);
+  //     if (result.success) {
+  //       setEmailOtpSent(true);
+  //       alert("OTP sent to your email");
+  //     }
+  //   } catch {
+  //     alert("Failed to send email OTP");
+  //   } finally {
+  //     setLoadingOtp(false);
+  //   }
+  // };
   const handleSendOtp = async () => {
     try {
-      if(!watchedFields.email) setError("Please provide the email.")
+      if (!watchedFields.email) {
+        setError("Please provide the email.");
+        return;
+      }
+
       setLoadingOtp(true);
       const result = await sendEmailOtp(watchedFields.email);
       if (result.success) {
         setEmailOtpSent(true);
+        setEmailCooldown(60); // ⏳ 60s cooldown starts here
         alert("OTP sent to your email");
       }
     } catch {
@@ -184,6 +215,26 @@ export default function FeedbackForm() {
     }
   };
 
+  // const handleSendPhoneOtp = async () => {
+  //   try {
+  //     setLoadingPhoneOtp(true);
+  //     await setupRecaptcha();
+  //     const confirmationResult = await signInWithPhoneNumber(
+  //       auth,
+  //       `+91${watchedFields.phone}`,
+  //       window.recaptchaVerifier
+  //     );
+  //     window.confirmationResult = confirmationResult;
+  //     setPhoneOtpSent(true);
+  //     alert("OTP sent to phone");
+  //   } catch (error) {
+  //     console.error(error);
+  //     alert("Failed to send phone OTP");
+  //   } finally {
+  //     setLoadingPhoneOtp(false);
+  //   }
+  // };
+
   const handleSendPhoneOtp = async () => {
     try {
       setLoadingPhoneOtp(true);
@@ -195,6 +246,7 @@ export default function FeedbackForm() {
       );
       window.confirmationResult = confirmationResult;
       setPhoneOtpSent(true);
+      setPhoneCooldown(60); // Start 60s cooldown
       alert("OTP sent to phone");
     } catch (error) {
       console.error(error);
@@ -227,19 +279,19 @@ export default function FeedbackForm() {
   const onSubmit = async (data: FeedbackFormFields) => {
     setError("");
     setSubmitting(true);
-    
+
     if (!emailOtpVerified) {
       setError("Please verify your email before submitting.");
       setSubmitting(false);
       return;
     }
-    
+
     if (!phoneOtpVerified) {
       setError("Please verify your phone before submitting.");
       setSubmitting(false);
       return;
     }
-    
+
     try {
       const feedbackRef = collection(db, "submissions");
       const q = query(
@@ -248,12 +300,12 @@ export default function FeedbackForm() {
         where("email", "==", data.email)
       );
       const snapshot = await getDocs(q);
-      
+
       if (!snapshot.empty) {
         setError("You have already submitted this form.");
         return;
       }
-      
+
       const templateSnap = await getDocs(
         query(
           collection(db, "certificateTemplates"),
@@ -261,7 +313,7 @@ export default function FeedbackForm() {
         )
       );
       if (templateSnap.empty) return;
-      
+
       const templateData = templateSnap.docs[0].data();
       const pdfBytes = await generateCertificate(
         templateData.downloadURL,
@@ -273,14 +325,14 @@ export default function FeedbackForm() {
           workshopName: formData.workshopName,
         }
       );
-      
+
       const certRef = ref(storage, `certificates/${id}_${data.email}.pdf`);
       await uploadBytes(
         certRef,
         new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" })
       );
       const url = await getDownloadURL(certRef);
-      
+
       await setDoc(doc(db, "submissions", `${id}_${data.email}`), {
         formId: id,
         submittedAt: serverTimestamp(),
@@ -293,26 +345,26 @@ export default function FeedbackForm() {
         time: formData.time,
         ...data,
       });
-localStorage.removeItem(`feedback_draft_${id}`);
+      localStorage.removeItem(`feedback_draft_${id}`);
 
-setSubmitted(true);
-} catch (err) {
-  console.error("Submission failed", err);
-  setError("Submission failed. Try again later.");
-}finally{
-  setSubmitting(false);
-}
-};
-if (loading) return <div className="text-center mt-10">Loading...</div>;
-if (invalid)
-  return (
-<div className="text-center text-red-600 mt-10">
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Submission failed", err);
+      setError("Submission failed. Try again later.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  if (loading) return <div className="text-center mt-10">Loading...</div>;
+  if (invalid)
+    return (
+      <div className="text-center text-red-600 mt-10">
         Invalid or Inactive Form
       </div>
     );
-    if (submitted)
-      return (
-    <div className="text-center text-green-600 mt-10">
+  if (submitted)
+    return (
+      <div className="text-center text-green-600 mt-10">
         Thank you for your feedback!
         <p className="text-gray-700 mt-2">
           Your certificate will be sent to your registered email and WhatsApp
@@ -327,9 +379,9 @@ if (invalid)
             </button> */}
       </div>
     );
-    
-    return (
-      <div className="max-w-xl mx-auto p-4">
+
+  return (
+    <div className="max-w-xl mx-auto p-4">
       <div className="mb-4 fixed top-4 right-10 w-[250px]">
         <label className="block text-sm font-medium text-gray-700 mb-1 text-white">
           Form Progress: {progress}%
@@ -338,7 +390,7 @@ if (invalid)
           <div
             className="h-full bg-blue-500 rounded"
             style={{ width: `${progress}%` }}
-            />
+          />
         </div>
       </div>
       <h1 className="text-2xl font-bold mb-2">{formData?.workshopName}</h1>
@@ -389,7 +441,7 @@ if (invalid)
                 <p className="text-red-500">{errors.email.message as string}</p>
               )}
 
-              {!emailOtpSent && (
+              {/* {!emailOtpSent && (
                 <button
                   type="button"
                   onClick={handleSendOtp}
@@ -398,6 +450,29 @@ if (invalid)
                 >
                   {loadingOtp ? "Sending..." : "Send OTP"}
                 </button>
+              )} */}
+              {!emailOtpVerified && (
+                <>
+                  {!emailOtpSent || emailCooldown === 0 ? (
+                    <button
+                      type="button"
+                      onClick={handleSendOtp}
+                      disabled={loadingOtp || !watchedFields.email}
+                      className="mt-2 text-sm underline text-blue-600 cursor-pointer"
+                    >
+                      {loadingOtp
+                        ? "Sending..."
+                        : emailOtpSent
+                        ? "Resend OTP"
+                        : "Send OTP"}
+                    </button>
+                  ) : (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Resend OTP in{" "}
+                      <span className="font-semibold">{emailCooldown}s</span>
+                    </p>
+                  )}
+                </>
               )}
 
               {emailOtpSent && !emailOtpVerified && (
@@ -443,7 +518,7 @@ if (invalid)
                 <p className="text-red-500">{errors.phone.message as string}</p>
               )}
 
-              {!phoneOtpSent && (
+              {/* {!phoneOtpSent && (
                 <button
                   type="button"
                   onClick={handleSendPhoneOtp}
@@ -452,6 +527,30 @@ if (invalid)
                 >
                   {loadingPhoneOtp ? "Sending..." : "Send OTP"}
                 </button>
+              )} */}
+
+              {!phoneOtpVerified && (
+                <>
+                  {!phoneOtpSent || phoneCooldown === 0 ? (
+                    <button
+                      type="button"
+                      onClick={handleSendPhoneOtp}
+                      disabled={loadingPhoneOtp || !watchedFields.phone}
+                      className="mt-2 text-sm underline text-blue-600 cursor-pointer"
+                    >
+                      {loadingPhoneOtp
+                        ? "Sending..."
+                        : phoneOtpSent
+                        ? "Resend OTP"
+                        : "Send OTP"}
+                    </button>
+                  ) : (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Resend OTP in{" "}
+                      <span className="font-semibold">{phoneCooldown}s</span>
+                    </p>
+                  )}
+                </>
               )}
 
               {phoneOtpSent && !phoneOtpVerified && (
@@ -539,41 +638,41 @@ if (invalid)
               Submit Feedback
             </button> */}
             <button
-  type="submit"
-  // disabled={submitting || !emailOtpVerified || !phoneOtpVerified}
-  className={`bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center justify-center gap-2 ${
-    (!emailOtpVerified || !phoneOtpVerified || submitting) && "opacity-50 cursor-not-allowed"
-  }`}
->
-  {submitting ? (
-    <>
-      <svg
-        className="animate-spin h-5 w-5 text-white"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle
-          className="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          strokeWidth="4"
-        />
-        <path
-          className="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-        />
-      </svg>
-      Submitting...
-    </>
-  ) : (
-    "Submit Feedback"
-  )}
-</button>
-
+              type="submit"
+              // disabled={submitting || !emailOtpVerified || !phoneOtpVerified}
+              className={`bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center justify-center gap-2 ${
+                (!emailOtpVerified || !phoneOtpVerified || submitting) &&
+                "opacity-50 cursor-not-allowed"
+              }`}
+            >
+              {submitting ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
+                  </svg>
+                  Submitting...
+                </>
+              ) : (
+                "Submit Feedback"
+              )}
+            </button>
           </form>
         </>
       )}
