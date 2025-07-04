@@ -11,12 +11,19 @@ import AdminLayout from "../pages/AdminLayout";
 import StudentFeedbackForm from "../pages/StudentFeedbackForm";
 import CertificateManager from "../pages/CertificateManager";
 import CheckSubmissions from "../pages/CheckSubmissions";
+import Landing from "../pages/Landing";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
     children: [
+      {
+        index:true,
+        element: (
+          <Landing/>
+        ),
+      },
       {
         path: "login",
         element: (
