@@ -1,97 +1,3 @@
-// import React, { useEffect, useRef, useState } from "react";
-// import Draggable from "react-draggable";
-
-// interface TemplateEditorProps {
-//   backgroundImageUrl: string;
-//   onSave: (positions: { field: string; x: number; y: number }[]) => void;
-// }
-
-// const fields = ["name", "college", "workshopName", "date"];
-
-// export default function TemplateEditor({ backgroundImageUrl, onSave }: TemplateEditorProps) {
-//   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({});
-//   const nodeRefs = useRef<Record<string, React.RefObject<HTMLDivElement | null>>>({});
-
-//   useEffect(() => {
-//     const initialPositions: Record<string, { x: number; y: number }> = {};
-//     fields.forEach((field) => {
-//       initialPositions[field] = { x: 100, y: 100 };
-
-//       // Initialize refs only once
-//       if (!nodeRefs.current[field]) {
-//         nodeRefs.current[field] = React.createRef<HTMLDivElement>();
-//       }
-//     });
-//     setPositions(initialPositions);
-//   }, []);
-
-//   const handleDrag = (field: string, e: any, data: any) => {
-//     setPositions((prev) => ({
-//       ...prev,
-//       [field]: { x: data.x, y: data.y },
-//     }));
-//   };
-
-//   const handleSave = () => {
-//     const result = Object.entries(positions).map(([field, pos]) => ({
-//       field,
-//       x: pos.x,
-//       y: pos.y,
-//     }));
-//     onSave(result);
-//   };
-
-//   return (
-//     <div className="my-4">
-//       <div
-//         style={{
-//           width: 842,
-//           height: 595,
-//           backgroundImage: `url(${backgroundImageUrl})`,
-//           backgroundSize: "cover",
-//           backgroundPosition: "center",
-//           border: "1px solid #ccc",
-//           position: "relative",
-//           margin: "auto",
-//         }}
-//       >
-//         {fields.map((field) => {
-//           const ref = nodeRefs.current[field]!;
-//           return (
-//             <Draggable
-//               key={field}
-//               nodeRef={ref as React.RefObject<HTMLElement>}
-//               position={positions[field]}
-//               onDrag={(e, data) => handleDrag(field, e, data)}
-//             >
-//               <div
-//                 ref={ref}
-//                 style={{
-//                   position: "absolute",
-//                   padding: "4px 8px",
-//                   background: "rgba(255,255,0,0.85)",
-//                   border: "1px solid #666",
-//                   fontSize: 12,
-//                   cursor: "move",
-//                 }}
-//               >
-//                 {`{{${field}}}`}
-//               </div>
-//             </Draggable>
-//           );
-//         })}
-//       </div>
-
-//       <button
-//         onClick={handleSave}
-//         className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
-//       >
-//         Save Field Positions
-//       </button>
-//     </div>
-//   );
-// }
-
 import { DndContext, useDraggable, closestCenter } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { useEffect, useState } from "react";
@@ -110,7 +16,6 @@ type Position = { x: number; y: number };
 export default function TemplateEditor({
   backgroundImageUrl,
   onSave,
-  showContainer,
   setShowContainer,
 }: TemplateEditorProps) {
   const [positions, setPositions] = useState<Record<string, Position>>({});

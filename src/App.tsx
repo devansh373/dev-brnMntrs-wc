@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 const App = () => {
   const location = useLocation();

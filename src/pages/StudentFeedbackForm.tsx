@@ -23,7 +23,6 @@ import { useForm } from "react-hook-form";
 import { sendEmailOtp } from "../utils/sendOtp";
 import { verifyEmailOtp } from "../utils/verifyOtp";
 import {
-  getAuth,
   RecaptchaVerifier,
   signInWithPhoneNumber,
 } from "firebase/auth";

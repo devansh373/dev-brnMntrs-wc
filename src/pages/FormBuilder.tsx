@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Editor from "../components/Editor";
-import { addDoc, collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
+import {  doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "../utils/firebase";
 import { v4 as uuidv4 } from "uuid";
 import TimePicker from "react-time-picker";

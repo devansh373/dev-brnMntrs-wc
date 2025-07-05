@@ -23,7 +23,7 @@ export default function CertificateManager() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingEditFields, setLoadingEditFields] = useState(false);
-  const [loadingDeleteTemplate, setLoadingDeleteTemplate] = useState(false);
+  // const [loadingDeleteTemplate, setLoadingDeleteTemplate] = useState(false);
   const [selectedTemplateUrl, setSelectedTemplateUrl] = useState("");
   const [renderedPreviewUrl, setRenderedPreviewUrl] = useState("");
   const [workshops, setWorkshops] = useState<any[]>([]);
@@ -116,11 +116,11 @@ export default function CertificateManager() {
   const deleteTemplate = async (template: any) => {
     if (!window.confirm("Delete this template?")) return;
     try {
-      setLoadingDeleteTemplate(true)
+      // setLoadingDeleteTemplate(true)
       const fileRef = ref(storage, `certificateTemplates/${template.fileName}`);
       await deleteObject(fileRef);
       await deleteDoc(doc(db, "certificateTemplates", template.id));
-      setLoadingDeleteTemplate(false)
+      // setLoadingDeleteTemplate(false)
       fetchTemplates();
     } catch (error) {
       console.error("Delete error:", error);

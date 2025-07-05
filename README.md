@@ -90,7 +90,7 @@ src/
 ├── pages/               # Route-based pages
 ├── utils/               # Firebase, OTP, certificate generation, etc.
 ├── context/             # Auth context
-├── types/               # TypeScript types
+├── tests/               # Test files
 └── App.tsx              # App routing and layout
 ```
 
@@ -128,10 +128,14 @@ src/
 ## 👨‍💻 Author
 
 **Devansh Raghav**  
-[GitHub](https://github.com/devanshraghav) • [LinkedIn](https://linkedin.com/in/devanshraghav)
+[GitHub](https://github.com/devansh373) • [LinkedIn](https://www.linkedin.com/in/devansh-raghav-b14690231/)
 
 ---
 
 ## 📝 License
 
 This project is for educational purposes and may be modified for personal or institutional use.
+
+## Repo Link
+
+[GitHub](https://github.com/dev-brnMntrs-wc) 
