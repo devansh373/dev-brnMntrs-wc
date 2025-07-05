@@ -152,7 +152,7 @@ export default function FeedbackForm() {
       }
     );
 
-    return window.recaptchaVerifier.render();
+    // return window.recaptchaVerifier.render();
   };
 
   // const handleSendOtp = async () => {
