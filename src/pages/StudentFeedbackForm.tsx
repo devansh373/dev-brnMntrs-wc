@@ -346,12 +346,13 @@ export default function FeedbackForm() {
       });
       localStorage.removeItem(`feedback_draft_${id}`);
 
-      setSubmitted(true);
+      // setSubmitted(true);
     } catch (err) {
       console.error("Submission failed", err);
       setError("Submission failed. Try again later.");
     } finally {
       setSubmitting(false);
+      setSubmitted(true);
     }
   };
   if (loading) return <div className="text-center mt-10">Loading...</div>;
