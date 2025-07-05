@@ -11,7 +11,11 @@ export default function AdminLayout() {
             to="/admin"
             end
             className={({ isActive }) =>
-              isActive ? "text-blue-400 font-bold" : "text-white"
+              `px-2 py-1 rounded transition-colors ${
+                isActive
+                  ? "text-blue-400 font-bold"
+                  : "text-white hover:text-blue-300 hover:bg-gray-800"
+              }`
             }
           >
             Dashboard
@@ -19,7 +23,11 @@ export default function AdminLayout() {
           <NavLink
             to="/admin/create"
             className={({ isActive }) =>
-              isActive ? "text-blue-400 font-bold" : "text-white"
+              `px-2 py-1 rounded transition-colors ${
+                isActive
+                  ? "text-blue-400 font-bold"
+                  : "text-white hover:text-blue-300 hover:bg-gray-800"
+              }`
             }
           >
             Create New Form
@@ -27,19 +35,15 @@ export default function AdminLayout() {
           <NavLink
             to="/admin/certificate-template"
             className={({ isActive }) =>
-              isActive ? "text-blue-400 font-bold" : "text-white"
+              `px-2 py-1 rounded transition-colors ${
+                isActive
+                  ? "text-blue-400 font-bold"
+                  : "text-white hover:text-blue-300 hover:bg-gray-800"
+              }`
             }
           >
             Certificate Template
           </NavLink>
-          {/* <NavLink
-            to="/admin/check-submissions"
-            className={({ isActive }) =>
-              isActive ? "text-blue-400 font-bold" : "text-white"
-            }
-          >
-            Check Workshops
-          </NavLink> */}
         </nav>
       </aside>
 

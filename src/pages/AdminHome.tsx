@@ -138,164 +138,173 @@ export default function AdminHome() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">List of Forms</h1>
-
-      <select
-        className="p-2 border rounded mb-4 w-full"
-        value={selectedWorkshop}
-        onChange={(e) => {
-          setSelectedWorkshop(e.target.value);
-        }}
-      >
-        <option value="">-- Select Workshop --</option>
-        {workshops.map((ws) => (
-          <option key={ws.id} value={ws.id}>
-            {ws.workshopName} ({ws.college})
-          </option>
-        ))}
-      </select>
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <div className="bg-white shadow rounded p-6">
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">
+          📋 Manage Workshops
+        </h1>
+        <select
+          className="w-full border rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={selectedWorkshop}
+          onChange={(e) => setSelectedWorkshop(e.target.value)}
+        >
+          <option value="">-- Select Workshop --</option>
+          {workshops.map((ws) => (
+            <option key={ws.id} value={ws.id}>
+              {ws.workshopName} ({ws.college})
+            </option>
+          ))}
+        </select>
+      </div>
 
       {selectedWorkshop && (
         <>
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700 cursor-pointer"
-            onClick={fetchSubmissions}
-            disabled={!selectedWorkshop}
-          >
-            Load Submissions
-          </button>
-
-          <button
-            onClick={handleToggleWorkshopStatus}
-            className={`mb-4 ml-2 px-4 py-2 rounded text-white cursor-pointer ${
-              workshops.find((w) => w.id === selectedWorkshop)?.isActive
-                ? "bg-red-600  hover:bg-red-700"
-                : "bg-green-600  hover:bg-green-700"
-            }`}
-          >
-            {workshops.find((w) => w.id === selectedWorkshop)?.isActive
-              ? "Deactivate Form"
-              : "Activate Form"}
-          </button>
-
-          {/* {workshops.map((ws) => ws.id === selectedWorkshop && <p>{ws.formURL}</p>)} */}
-          {formURL && (
-            <div className="mb-4 text-sm">
-              <span className="font-semibold">Form Link:</span>{" "}
-              <Link
-                to={formURL}
-                target="_blank"
-                className="text-blue-600 underline"
-              >
-                {formURL}
-              </Link>
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-4 mb-4">
-            <input
-              type="text"
-              placeholder="Search name or email"
-              className="p-2 border rounded flex-1 min-w-[200px]"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-
-            <select
-              className="p-2 border rounded"
-              value={ratingFilter}
-              onChange={(e) => setRatingFilter(e.target.value)}
+          <div className="bg-white shadow rounded p-6 flex flex-wrap gap-4 items-center">
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition cursor-pointer"
+              onClick={fetchSubmissions}
             >
-              <option value="">All Ratings</option>
-              <option value="5">Excellent (5)</option>
-              <option value="4">Very Good (4)</option>
-              <option value="3">Good (3)</option>
-              <option value="2">Fair (2)</option>
-              <option value="1">Poor (1)</option>
-            </select>
+              Load Submissions
+            </button>
 
-            <input
-              type="text"
-              placeholder="Filter by course"
-              className="p-2 border rounded flex-1 min-w-[150px]"
-              value={courseFilter}
-              onChange={(e) => setCourseFilter(e.target.value)}
-            />
+            <button
+              onClick={handleToggleWorkshopStatus}
+              className={`px-4 py-2 rounded text-white transition cursor-pointer ${
+                workshops.find((w) => w.id === selectedWorkshop)?.isActive
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-green-600 hover:bg-green-700"
+              }`}
+            >
+              {workshops.find((w) => w.id === selectedWorkshop)?.isActive
+                ? "Deactivate Form"
+                : "Activate Form"}
+            </button>
+
+            {formURL && (
+              <div className="text-sm">
+                <strong>🔗 Form Link:</strong>{" "}
+                <a
+                  href={formURL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  {formURL}
+                </a>
+              </div>
+            )}
           </div>
 
-          {filteredSubmissions.length > 0 && (
-            <div className="mb-4 p-4 bg-gray-100 rounded border text-sm md:text-base flex flex-wrap gap-6">
-              <div>
-                <strong>Total:</strong> {total}
-              </div>
-              <div>
-                <strong>Average Rating:</strong> {averageRating.toFixed(1)}
-              </div>
-              <div>
-                <strong>Certificates Sent:</strong> {certsSent}
-              </div>
+          <div className="bg-white shadow rounded p-6 space-y-4">
+            <div className="flex flex-wrap gap-4">
+              <input
+                type="text"
+                placeholder="🔍 Search by name or email"
+                className="p-2 border rounded flex-1 min-w-[200px]"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <select
+                className="p-2 border rounded cursor-pointer"
+                value={ratingFilter}
+                onChange={(e) => setRatingFilter(e.target.value)}
+              >
+                <option value="">⭐ All Ratings</option>
+                <option value="5">Excellent (5)</option>
+                <option value="4">Very Good (4)</option>
+                <option value="3">Good (3)</option>
+                <option value="2">Fair (2)</option>
+                <option value="1">Poor (1)</option>
+              </select>
+              <input
+                type="text"
+                placeholder="🎓 Filter by course"
+                className="p-2 border rounded flex-1 min-w-[150px]"
+                value={courseFilter}
+                onChange={(e) => setCourseFilter(e.target.value)}
+              />
             </div>
-          )}
 
-          {filteredSubmissions.length > 0 && (
-            <>
-              <table className="w-full table-auto border">
-                <thead>
-                  <tr className="bg-gray-200 text-left">
-                    <th className="p-2">Name</th>
-                    <th className="p-2">Email</th>
-                    <th className="p-2">Rating</th>
-                    <th className="p-2">Certificate</th>
-                    <th className="p-2">Submitted At</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSubmissions.map((s) => (
-                    <tr key={s.id} className="border-t">
-                      <td className="p-2">{s.name}</td>
-                      <td className="p-2">{s.email}</td>
-                      <td className="p-2">{s.rating}</td>
-                      <td className="p-2">
-                        {s.certificateURL ? (
-                          <a
-                            href={s.certificateURL}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-blue-600 underline"
-                          >
-                            View
-                          </a>
-                        ) : (
-                          <span className="text-red-600">Not Generated</span>
-                        )}
-                      </td>
-                      <td className="p-2 text-sm">
-                        {s.submittedAt?.toDate().toLocaleString?.() ?? "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="flex gap-4 mt-4 justify-end">
-                <button
-                  onClick={handleExportAll}
-                  className="bg-gray-600 text-white px-4 py-2 rounded"
-                  disabled={submissions.length === 0}
-                >
-                  Export All
-                </button>
-                <button
-                  onClick={handleExportFiltered}
-                  className="bg-green-600 text-white px-4 py-2 rounded"
-                  disabled={filteredSubmissions.length === 0}
-                >
-                  Export Filtered
-                </button>
+            {filteredSubmissions.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm bg-gray-50 p-4 rounded border">
+                <div>
+                  <strong>Total:</strong> {total}
+                </div>
+                <div>
+                  <strong>Average Rating:</strong> {averageRating.toFixed(1)}
+                </div>
+                <div>
+                  <strong>Certificates Sent:</strong> {certsSent}
+                </div>
               </div>
-            </>
-          )}
+            )}
+
+            {filteredSubmissions.length > 0 && (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full table-auto border rounded overflow-hidden">
+                    <thead className="bg-gray-100 text-left">
+                      <tr>
+                        <th className="p-2">Name</th>
+                        <th className="p-2">Email</th>
+                        <th className="p-2">Rating</th>
+                        <th className="p-2">Certificate</th>
+                        <th className="p-2">Submitted At</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSubmissions.map((s, idx) => (
+                        <tr
+                          key={s.id}
+                          className={`${
+                            idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                          } hover:bg-blue-50`}
+                        >
+                          <td className="p-2">{s.name}</td>
+                          <td className="p-2">{s.email}</td>
+                          <td className="p-2">{s.rating}</td>
+                          <td className="p-2">
+                            {s.certificateURL ? (
+                              <a
+                                href={s.certificateURL}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-blue-600 underline"
+                              >
+                                View
+                              </a>
+                            ) : (
+                              <span className="text-red-600">
+                                Not Generated
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-2 text-sm">
+                            {s.submittedAt?.toDate().toLocaleString?.() ?? "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex gap-4 justify-end mt-4">
+                  <button
+                    onClick={handleExportAll}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded cursor-pointer"
+                  >
+                    📁 Export All
+                  </button>
+                  <button
+                    onClick={handleExportFiltered}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded cursor-pointer"
+                  >
+                    ✅ Export Filtered
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </>
       )}
     </div>

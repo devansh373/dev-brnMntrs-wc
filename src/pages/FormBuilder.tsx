@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Editor from "../components/Editor"; // Adjust the path if needed
+import Editor from "../components/Editor";
 import { addDoc, collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "../utils/firebase";
 import { v4 as uuidv4 } from "uuid";
@@ -14,16 +14,41 @@ export default function FormBuilder() {
   const [workshopName, setWorkshopName] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState<string>("10:00 AM");
-  const [instructions, setInstructions] = useState(""); // <== Editor data
+  const [instructions, setInstructions] = useState("");
   const [formStatus, setFormStatus] = useState(false);
   const [formURL, setFormURL] = useState("");
-const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState(false);
 
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const validate = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!college.trim().match(/^[A-Za-z\s]{2,}$/)) {
+      newErrors.college = "College name must contain only letters and spaces (min 2 chars).";
+    }
+    if (!workshopName.trim().match(/^[\w\s-]{2,}$/)) {
+      newErrors.workshopName = "Workshop name must contain letters, numbers, spaces, or dashes.";
+    }
+    if (!date) {
+      newErrors.date = "Date is required.";
+    }
+    if (!time) {
+      newErrors.time = "Time is required.";
+    }
+    if (!instructions.trim()) {
+      newErrors.instructions = "Instructions are required.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const id = uuidv4(); // Generate unique ID for form
+    if (!validate()) return;
 
+    const id = uuidv4();
     const formData = {
       id,
       college,
@@ -35,16 +60,12 @@ const [copied, setCopied] = useState(false);
       createdAt: serverTimestamp(),
       formURL: `${window.location.origin}/feedback/${id}`,
     };
-    console.log(formData);
 
     try {
       await setDoc(doc(db, "workshops", id), formData);
       setFormURL(formData.formURL);
 
-
       alert("Workshop created successfully!");
-
-      // Clear form
       setCollege("");
       setWorkshopName("");
       setDate("");
@@ -58,64 +79,59 @@ const [copied, setCopied] = useState(false);
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="p-6 border rounded max-w-2xl mx-auto"
-    >
-      <h1 className="text-2xl font-bold mb-4">Create Workshop Feedback Form</h1>
+    <form onSubmit={handleSubmit} className="p-6 border rounded max-w-2xl mx-auto shadow bg-white">
+      <h1 className="text-2xl font-bold mb-6 text-center">Create Workshop Feedback Form</h1>
 
-      <label>College Name</label>
+      <label className="block font-medium">College Name</label>
       <input
-        className="w-full p-2 border mb-2"
+        className="w-full p-2 border rounded mb-1 focus:outline-blue-500"
         value={college}
         onChange={(e) => setCollege(e.target.value)}
-        required
       />
+      {errors.college && <p className="text-red-500 text-sm mb-2">{errors.college}</p>}
 
-      <label>Workshop Name</label>
+      <label className="block font-medium">Workshop Name</label>
       <input
-        className="w-full p-2 border mb-2"
+        className="w-full p-2 border rounded mb-1 focus:outline-blue-500"
         value={workshopName}
         onChange={(e) => setWorkshopName(e.target.value)}
-        required
       />
+      {errors.workshopName && <p className="text-red-500 text-sm mb-2">{errors.workshopName}</p>}
 
       <div className="flex gap-4">
         <div className="flex-1">
-          <label>Date</label>
+          <label className="block font-medium">Date</label>
           <input
             type="date"
-            className="w-full p-2 border mb-2"
+            className="w-full p-2 border rounded mb-1 focus:outline-blue-500"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            required
           />
+          {errors.date && <p className="text-red-500 text-sm mb-2">{errors.date}</p>}
         </div>
         <div className="flex-1 min-w-[100px]">
-          <label>Time</label>
+          <label className="block font-medium">Time</label>
           <TimePicker
-            onChange={(value) => {
-              // value && console.log(formatTime(value));
-              value && setTime(formatTime(value));
-            }}
+            onChange={(value) => value && setTime(formatTime(value))}
             value={time}
             disableClock
             format="hh:mm a"
-            locale="en-US" // ✅ Forces 12-hour AM/PM format
+            locale="en-US"
             className="w-full mb-2"
-            required
           />
+          {errors.time && <p className="text-red-500 text-sm mb-2">{errors.time}</p>}
         </div>
       </div>
 
-      <label>Instructions</label>
+      <label className="block font-medium">Instructions</label>
       <Editor content={instructions} setContent={setInstructions} />
+      {errors.instructions && <p className="text-red-500 text-sm mt-1">{errors.instructions}</p>}
 
       <div className="mt-4">
-        <label>Form Status:</label>
+        <label className="font-medium">Form Status:</label>
         <button
           type="button"
-          className={`ml-2 px-4 py-1 rounded ${
+          className={`ml-2 px-4 py-1.5 rounded transition cursor-pointer ${
             formStatus ? "bg-green-500 text-white" : "bg-gray-300"
           }`}
           onClick={() => setFormStatus((prev) => !prev)}
@@ -126,27 +142,29 @@ const [copied, setCopied] = useState(false);
 
       <button
         type="submit"
-        className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+        className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition cursor-pointer"
       >
         Create Form
       </button>
-      {formURL && (
-  <div className="mt-4 flex items-center gap-4">
-    <Link to={formURL} className="text-sm text-gray-700 truncate">{formURL}</Link>
-    <button
-      type="button"
-      onClick={async () => {
-        await navigator.clipboard.writeText(formURL);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }}
-      className="bg-gray-800 text-white px-3 py-1 rounded"
-    >
-      {copied ? "Copied!" : "Copy Link"}
-    </button>
-  </div>
-)}
 
+      {formURL && (
+        <div className="mt-6 flex items-center gap-4">
+          <Link to={formURL} className="text-sm text-blue-700 underline truncate max-w-[70%]">
+            {formURL}
+          </Link>
+          <button
+            type="button"
+            onClick={async () => {
+              await navigator.clipboard.writeText(formURL);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className="bg-gray-800 text-white px-3 py-1 rounded cursor-pointer"
+          >
+            {copied ? "Copied!" : "Copy Link"}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

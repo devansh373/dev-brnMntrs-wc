@@ -142,111 +142,114 @@ export default function CertificateManager() {
   }, []);
   
 
-  return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h1 className="text-xl font-bold mb-4">Certificate Templates</h1>
+ return (
+  <div className="p-6 max-w-3xl mx-auto">
+    <h1 className="text-2xl font-bold mb-6">📄 Certificate Templates</h1>
 
-      <label className="block mb-1">Select Workshop</label>
-      <select
-        className="w-full p-2 border rounded mb-4"
-        value={selectedWorkshop}
-        onChange={(e) => setSelectedWorkshop(e.target.value)}
-      >
-        <option value="">-- Select Workshop --</option>
-        {workshops.map((ws) => (
-          <option key={ws.id} value={ws.id}>
-            {ws.workshopName} ({ws.college})
-          </option>
-        ))}
-      </select>
+    <div className="space-y-4 mb-8">
+      <div>
+        <label className="block font-semibold mb-1">Select Workshop</label>
+        <select
+          className="w-full p-2 border rounded focus:outline-none focus:ring focus:border-blue-400 cursor-pointer"
+          value={selectedWorkshop}
+          onChange={(e) => setSelectedWorkshop(e.target.value)}
+        >
+          <option value="">-- Select Workshop --</option>
+          {workshops.map((ws) => (
+            <option key={ws.id} value={ws.id}>
+              {ws.workshopName} ({ws.college})
+            </option>
+          ))}
+        </select>
+      </div>
 
-        <label htmlFor="file" className=" cursor-pointer border border-blue-500 px-2 py-1.5 rounded-lg text-white  bg-blue-950">Choose File</label>
-      <input
-      id="file"
-        type="file"
-        accept="application/pdf"
-        onChange={handleFileChange}
-        
-        hidden
-      />
-      <button
-        onClick={uploadTemplate}
-        disabled={loading}
-        className="ml-2 px-4 py-1 bg-blue-600 text-white rounded cursor-pointer"
-      >
-        {loading ? "Uploading..." : "Upload"}
-      </button>
+      <div className="flex items-center gap-4">
+        <label
+          htmlFor="file"
+          className="cursor-pointer px-4 py-2 rounded bg-blue-900 text-white hover:bg-blue-950 transition"
+        >
+          Choose File
+        </label>
+        <input id="file" type="file" accept="application/pdf" onChange={handleFileChange} hidden />
 
-      <ul className="mt-6 space-y-2">
-        {templates.map((tpl) => (
-          <li
-            key={tpl.id}
-            className="flex justify-between items-center border p-2 rounded"
-          >
-            <a
-              href={tpl.downloadURL}
-              target="_blank"
-              rel="noreferrer"
-              className="text-blue-600"
-            >
-              {tpl.fileName}
-            </a>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  // setLoadingEditFields(true)
-                  setSelectedTemplateUrl(tpl.downloadURL);
-                  setShowContainer(true);
-                }}
-                className="text-blue-600 underline text-sm cursor-pointer"
-              >
-                Edit Fields
-              </button>
-              <button
-                onClick={() => deleteTemplate(tpl)}
-                className="text-red-600 hover:underline text-sm cursor-pointer"
-              >
-                Delete
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      {selectedTemplateUrl && (
-        <PdfPreview
-          pdfUrl={selectedTemplateUrl}
-          onRendered={(imageUrl) => {
-            // Once we have the PNG, pass to TemplateEditor
-            setRenderedPreviewUrl(imageUrl); // set this state at top
-          }}
-        />
-      )}
-      {loadingEditFields && <p>Loading...</p>}
-
-      {renderedPreviewUrl && showContainer && !loadingEditFields &&(
-        <TemplateEditor
-          showContainer={showContainer}
-          setShowContainer={setShowContainer}
-          backgroundImageUrl={renderedPreviewUrl}
-          onSave={async (positions) => {
-            const templateId = templates.find(
-              (t) => t.workshopId === selectedWorkshop
-            )?.id;
-
-            if (!templateId) return alert("Template not found");
-
-            await setDoc(doc(db, "certificateTemplates", templateId), {
-              ...templates.find((t) => t.id === templateId),
-              fieldPositions: positions,
-            });
-            
-
-
-            alert("Field positions saved!");
-          }}
-        />
-      )}
+        <button
+          onClick={uploadTemplate}
+          disabled={loading}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition disabled:opacity-50 cursor-pointer"
+        >
+          {loading ? "Uploading..." : "Upload"}
+        </button>
+      </div>
     </div>
-  );
+
+    <h2 className="text-xl font-semibold mb-3">Your Templates</h2>
+    <ul className="space-y-3">
+      {templates.map((tpl) => (
+        <li
+          key={tpl.id}
+          className="flex justify-between items-center border border-gray-300 p-3 rounded shadow-sm bg-white hover:shadow-md transition"
+        >
+          <a
+            href={tpl.downloadURL}
+            target="_blank"
+            rel="noreferrer"
+            className="text-blue-600 hover:underline truncate w-2/3"
+            title={tpl.fileName}
+          >
+            📎 {tpl.fileName}
+          </a>
+          <div className="flex items-center gap-4 text-sm">
+            <button
+              onClick={() => {
+                setSelectedTemplateUrl(tpl.downloadURL);
+                setShowContainer(true);
+              }}
+              className="text-blue-600 hover:underline cursor-pointer"
+            >
+              Edit Fields
+            </button>
+            <button
+              onClick={() => deleteTemplate(tpl)}
+              className="text-red-600 hover:underline cursor-pointer"
+            >
+              Delete
+            </button>
+          </div>
+        </li>
+      ))}
+    </ul>
+
+    {selectedTemplateUrl && (
+      <PdfPreview
+        pdfUrl={selectedTemplateUrl}
+        onRendered={(imageUrl) => setRenderedPreviewUrl(imageUrl)}
+      />
+    )}
+
+    {loadingEditFields && <p>Loading...</p>}
+
+    {renderedPreviewUrl && showContainer && !loadingEditFields && (
+      <TemplateEditor
+        showContainer={showContainer}
+        setShowContainer={setShowContainer}
+        backgroundImageUrl={renderedPreviewUrl}
+        onSave={async (positions) => {
+          const templateId = templates.find(
+            (t) => t.workshopId === selectedWorkshop
+          )?.id;
+
+          if (!templateId) return alert("Template not found");
+
+          await setDoc(doc(db, "certificateTemplates", templateId), {
+            ...templates.find((t) => t.id === templateId),
+            fieldPositions: positions,
+          });
+
+          alert("Field positions saved!");
+        }}
+      />
+    )}
+  </div>
+);
+
 }

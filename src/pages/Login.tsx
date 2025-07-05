@@ -1,41 +1,26 @@
-// src/pages/Login.tsx
-import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../utils/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function Login() {
-  const { register, handleSubmit } = useForm();
-  const [errorMessage, setErrorMessage] = useState("")
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+  
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
- //  const { user, role, loading } = useAuth();
-
-  // if (loading) return <div>Loading...</div>;
-  // if (!user || role !== "admin") 
-
-//   useEffect(() => {
-//     const unsubscribe = onAuthStateChanged(auth, (user) => {
-//       if (user) {
-//         // const { uid, email, displayName } = user;
-//         console.log(user);
-//         // User is signed in, redirect to the home page
-        
-//         navigate("/admin");
-//       } else {
-//         // User is signed out, redirect to the login page
-//         console.log("User is signed out");
-        
-//         navigate("/");
-//       }
-//     });
-
-//     return () => unsubscribe(); // Cleanup subscription on unmount
-//   }, []);
   const onSubmit = async (data: any) => {
     try {
+      setErrorMessage("");
+      setLoading(true);
+
       const userCredential = await signInWithEmailAndPassword(
         auth,
         data.email,
@@ -43,36 +28,84 @@ export default function Login() {
       );
       const user = userCredential.user;
 
-      // Check role in Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists() && userDoc.data().role === "admin") {
         navigate("/admin");
       } else {
-        alert("You are not authorized");
+        setErrorMessage("You are not authorized to access this page.");
       }
     } catch (err: any) {
       setErrorMessage("Login failed: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto mt-20">
-      <h2 className="text-xl font-bold mb-4">Admin Login</h2>
-      <input
-        {...register("email")}
-        placeholder="Email"
-        className="mb-2 w-full p-2 border"
-      />
-      <input
-        {...register("password")}
-        type="password"
-        placeholder="Password"
-        className="mb-2 w-full p-2 border"
-      />
-      <p className="text-red-500">{errorMessage}</p>
-      <button type="submit" className="bg-blue-600 hover:bg-blue-700 cursor-pointer text-white px-4 py-2">
-        Login
-      </button>
-    </form>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-2xl font-bold text-center mb-6">Admin Login</h2>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              {...register("email", { required: "Email is required" })}
+              placeholder="admin@example.com"
+              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email.message as string}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              {...register("password", { required: "Password is required" })}
+              type="password"
+              placeholder="••••••••"
+              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.password && (
+              <p className="text-red-500 text-sm mt-1">{errors.password.message as string}</p>
+            )}
+          </div>
+
+          {errorMessage && (
+            <p className="text-red-600 text-sm">{errorMessage}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition flex justify-center items-center gap-2 disabled:opacity-50 cursor-pointer"
+          >
+            {loading && (
+              <svg
+                className="animate-spin h-5 w-5 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                />
+              </svg>
+            )}
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
