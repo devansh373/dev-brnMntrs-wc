@@ -1,6 +1,20 @@
 import { Outlet, NavLink } from "react-router-dom";
+import { signOut } from "firebase/auth";
+import { auth } from "../utils/firebase"; // adjust the path if needed
+import { useNavigate } from "react-router-dom";
 
 export default function AdminLayout() {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/login"); // or your admin login route
+    } catch (error) {
+      console.error("Logout failed:", error);
+      alert("Failed to logout");
+    }
+  };
   return (
     <div className="min-h-screen flex">
       {/* Sidebar */}
@@ -44,7 +58,14 @@ export default function AdminLayout() {
           >
             Certificate Template
           </NavLink>
-        </nav>
+          </nav>
+
+          <button
+            onClick={handleLogout}
+            className="mt-6 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm cursor-pointer"
+          >
+            Logout
+          </button>
       </aside>
 
       {/* Main Content */}
