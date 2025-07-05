@@ -22,10 +22,7 @@ import { auth, db, storage } from "../utils/firebase";
 import { useForm } from "react-hook-form";
 import { sendEmailOtp } from "../utils/sendOtp";
 import { verifyEmailOtp } from "../utils/verifyOtp";
-import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-} from "firebase/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { generateCertificate } from "../utils/generateCertificate";
 
@@ -302,6 +299,7 @@ export default function FeedbackForm() {
 
       if (!snapshot.empty) {
         setError("You have already submitted this form.");
+        console.log("already submitted");
         return;
       }
 
@@ -311,7 +309,10 @@ export default function FeedbackForm() {
           where("workshopId", "==", id)
         )
       );
-      if (templateSnap.empty) return;
+      if (templateSnap.empty) {
+        console.log("template not found");
+        return;
+      }
 
       const templateData = templateSnap.docs[0].data();
       const pdfBytes = await generateCertificate(
@@ -332,6 +333,8 @@ export default function FeedbackForm() {
       );
       const url = await getDownloadURL(certRef);
 
+      console.log(formData, id);
+
       await setDoc(doc(db, "submissions", `${id}_${data.email}`), {
         formId: id,
         submittedAt: serverTimestamp(),
@@ -346,13 +349,13 @@ export default function FeedbackForm() {
       });
       localStorage.removeItem(`feedback_draft_${id}`);
 
-      // setSubmitted(true);
+      setSubmitted(true);
     } catch (err) {
       console.error("Submission failed", err);
       setError("Submission failed. Try again later.");
     } finally {
       setSubmitting(false);
-      setSubmitted(true);
+      // setSubmitted(true);
     }
   };
   if (loading) return <div className="text-center mt-10">Loading...</div>;
@@ -381,261 +384,276 @@ export default function FeedbackForm() {
     );
 
   return (
-  <div className="w-full px-4 sm:px-6 md:px-8 max-w-2xl mx-auto pt-4">
-    {/* Progress Bar */}
-    <div className="mb-6">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Form Progress: {progress}%
-      </label>
-      <div className="w-full h-3 bg-gray-200 rounded">
-        <div
-          className="h-full bg-blue-500 rounded"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-    </div>
-
-    <h1 className="text-2xl font-bold mb-2">{formData?.workshopName}</h1>
-    <p className="text-gray-600">{formData?.college}</p>
-    <p className="mb-4 text-gray-600">
-      {formData?.date} at {formData?.time}
-    </p>
-
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Name */}
-      <div>
-        <label className="block mb-1">
-          Full Name <span className="text-red-600">*</span>
+    <div className="w-full px-4 sm:px-6 md:px-8 max-w-2xl mx-auto pt-4">
+      {/* Progress Bar */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Form Progress: {progress}%
         </label>
-        <input
-          className="w-full p-2 border rounded"
-          {...register("name", {
-            required: "Name is required",
-            pattern: {
-              value: regex.name,
-              message: "Enter a valid name",
-            },
-          })}
-        />
-        {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
+        <div className="w-full h-3 bg-gray-200 rounded">
+          <div
+            className="h-full bg-blue-500 rounded"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </div>
 
-      {/* Email + OTP */}
-      <div>
-        <label className="block mb-1">
-          Email <span className="text-red-600">*</span>
-        </label>
-        <input
-          type="email"
-          className="w-full p-2 border rounded"
-          {...register("email", {
-            required: "Email is required",
-            pattern: {
-              value: regex.email,
-              message: "Invalid email format",
-            },
-          })}
-        />
-        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+      <h1 className="text-2xl font-bold mb-2">{formData?.workshopName}</h1>
+      <p className="text-gray-600">{formData?.college}</p>
+      <p className="mb-4 text-gray-600">
+        {formData?.date} at {formData?.time}
+      </p>
 
-        {!emailOtpVerified && (
-          <>
-            {!emailOtpSent || emailCooldown === 0 ? (
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Name */}
+        <div>
+          <label className="block mb-1">
+            Full Name <span className="text-red-600">*</span>
+          </label>
+          <input
+            className="w-full p-2 border rounded"
+            {...register("name", {
+              required: "Name is required",
+              pattern: {
+                value: regex.name,
+                message: "Enter a valid name",
+              },
+            })}
+          />
+          {errors.name && (
+            <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+          )}
+        </div>
+
+        {/* Email + OTP */}
+        <div>
+          <label className="block mb-1">
+            Email <span className="text-red-600">*</span>
+          </label>
+          <input
+            type="email"
+            className="w-full p-2 border rounded"
+            {...register("email", {
+              required: "Email is required",
+              pattern: {
+                value: regex.email,
+                message: "Invalid email format",
+              },
+            })}
+          />
+          {errors.email && (
+            <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+          )}
+
+          {!emailOtpVerified && (
+            <>
+              {!emailOtpSent || emailCooldown === 0 ? (
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={loadingOtp || !watchedFields.email}
+                  className="mt-2 text-sm underline text-blue-600"
+                >
+                  {loadingOtp
+                    ? "Sending..."
+                    : emailOtpSent
+                    ? "Resend OTP"
+                    : "Send OTP"}
+                </button>
+              ) : (
+                <p className="text-sm text-gray-600 mt-2">
+                  Resend OTP in{" "}
+                  <span className="font-semibold">{emailCooldown}s</span>
+                </p>
+              )}
+            </>
+          )}
+
+          {emailOtpSent && !emailOtpVerified && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+              <input
+                className="w-full p-2 border rounded"
+                placeholder="Enter Email OTP"
+                value={emailOtpInput}
+                onChange={(e) => setEmailOtpInput(e.target.value)}
+              />
               <button
                 type="button"
-                onClick={handleSendOtp}
-                disabled={loadingOtp || !watchedFields.email}
-                className="mt-2 text-sm underline text-blue-600"
+                className="text-sm text-green-600 underline"
+                onClick={handleVerifyEmailOtp}
               >
-                {loadingOtp ? "Sending..." : emailOtpSent ? "Resend OTP" : "Send OTP"}
+                {loadingOtpVerification ? "Verifying..." : "Verify OTP"}
               </button>
-            ) : (
-              <p className="text-sm text-gray-600 mt-2">
-                Resend OTP in <span className="font-semibold">{emailCooldown}s</span>
-              </p>
-            )}
-          </>
-        )}
+            </div>
+          )}
 
-        {emailOtpSent && !emailOtpVerified && (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
-            <input
-              className="w-full p-2 border rounded"
-              placeholder="Enter Email OTP"
-              value={emailOtpInput}
-              onChange={(e) => setEmailOtpInput(e.target.value)}
-            />
-            <button
-              type="button"
-              className="text-sm text-green-600 underline"
-              onClick={handleVerifyEmailOtp}
-            >
-              {loadingOtpVerification ? "Verifying..." : "Verify OTP"}
-            </button>
-          </div>
-        )}
+          {emailOtpVerified && (
+            <p className="text-green-600 text-sm mt-1">Email verified ✅</p>
+          )}
+        </div>
 
-        {emailOtpVerified && (
-          <p className="text-green-600 text-sm mt-1">Email verified ✅</p>
-        )}
-      </div>
+        {/* Phone + OTP */}
+        <div>
+          <label className="block mb-1">
+            Phone <span className="text-red-600">*</span>
+          </label>
+          <input
+            type="tel"
+            className="w-full p-2 border rounded"
+            {...register("phone", {
+              required: "Phone number is required",
+              pattern: {
+                value: regex.phone,
+                message: "Enter valid 10-digit number",
+              },
+            })}
+          />
+          {errors.phone && (
+            <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
+          )}
 
-      {/* Phone + OTP */}
-      <div>
-        <label className="block mb-1">
-          Phone <span className="text-red-600">*</span>
-        </label>
-        <input
-          type="tel"
-          className="w-full p-2 border rounded"
-          {...register("phone", {
-            required: "Phone number is required",
-            pattern: {
-              value: regex.phone,
-              message: "Enter valid 10-digit number",
-            },
-          })}
-        />
-        {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
+          {!phoneOtpVerified && (
+            <>
+              {!phoneOtpSent || phoneCooldown === 0 ? (
+                <button
+                  type="button"
+                  onClick={handleSendPhoneOtp}
+                  disabled={loadingPhoneOtp || !watchedFields.phone}
+                  className="mt-2 text-sm underline text-blue-600"
+                >
+                  {loadingPhoneOtp
+                    ? "Sending..."
+                    : phoneOtpSent
+                    ? "Resend OTP"
+                    : "Send OTP"}
+                </button>
+              ) : (
+                <p className="text-sm text-gray-600 mt-2">
+                  Resend OTP in{" "}
+                  <span className="font-semibold">{phoneCooldown}s</span>
+                </p>
+              )}
+            </>
+          )}
 
-        {!phoneOtpVerified && (
-          <>
-            {!phoneOtpSent || phoneCooldown === 0 ? (
+          {phoneOtpSent && !phoneOtpVerified && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+              <input
+                className="w-full p-2 border rounded"
+                placeholder="Enter Phone OTP"
+                value={phoneOtpInput}
+                onChange={(e) => setPhoneOtpInput(e.target.value)}
+              />
               <button
                 type="button"
-                onClick={handleSendPhoneOtp}
-                disabled={loadingPhoneOtp || !watchedFields.phone}
-                className="mt-2 text-sm underline text-blue-600"
+                className="text-sm text-green-600 underline"
+                onClick={handleVerifyPhoneOtp}
               >
-                {loadingPhoneOtp ? "Sending..." : phoneOtpSent ? "Resend OTP" : "Send OTP"}
+                {loadingPhoneVerification ? "Verifying..." : "Verify OTP"}
               </button>
-            ) : (
-              <p className="text-sm text-gray-600 mt-2">
-                Resend OTP in <span className="font-semibold">{phoneCooldown}s</span>
-              </p>
-            )}
-          </>
-        )}
+            </div>
+          )}
 
-        {phoneOtpSent && !phoneOtpVerified && (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
-            <input
-              className="w-full p-2 border rounded"
-              placeholder="Enter Phone OTP"
-              value={phoneOtpInput}
-              onChange={(e) => setPhoneOtpInput(e.target.value)}
-            />
-            <button
-              type="button"
-              className="text-sm text-green-600 underline"
-              onClick={handleVerifyPhoneOtp}
-            >
-              {loadingPhoneVerification ? "Verifying..." : "Verify OTP"}
-            </button>
-          </div>
-        )}
+          {phoneOtpVerified && (
+            <p className="text-green-600 text-sm mt-1">Phone verified ✅</p>
+          )}
+        </div>
 
-        {phoneOtpVerified && (
-          <p className="text-green-600 text-sm mt-1">Phone verified ✅</p>
-        )}
-      </div>
+        {/* Course */}
+        <div>
+          <label className="block mb-1">
+            Course <span className="text-red-600">*</span>
+          </label>
+          <input
+            className="w-full p-2 border rounded"
+            {...register("course", {
+              required: "Course is required",
+              pattern: {
+                value: regex.course,
+                message: "Enter valid course name",
+              },
+            })}
+          />
+          {errors.course && (
+            <p className="text-red-500 text-sm mt-1">{errors.course.message}</p>
+          )}
+        </div>
 
-      {/* Course */}
-      <div>
-        <label className="block mb-1">
-          Course <span className="text-red-600">*</span>
-        </label>
-        <input
-          className="w-full p-2 border rounded"
-          {...register("course", {
-            required: "Course is required",
-            pattern: {
-              value: regex.course,
-              message: "Enter valid course name",
-            },
-          })}
-        />
-        {errors.course && (
-          <p className="text-red-500 text-sm mt-1">{errors.course.message}</p>
-        )}
-      </div>
+        {/* Rating */}
+        <div>
+          <label className="block mb-1">
+            Rating <span className="text-red-600">*</span>
+          </label>
+          <select
+            className="w-full p-2 border rounded"
+            defaultValue="5"
+            {...register("rating", { required: "Rating is required" })}
+          >
+            <option value="5">Excellent</option>
+            <option value="4">Very Good</option>
+            <option value="3">Good</option>
+            <option value="2">Fair</option>
+            <option value="1">Poor</option>
+          </select>
+        </div>
 
-      {/* Rating */}
-      <div>
-        <label className="block mb-1">
-          Rating <span className="text-red-600">*</span>
-        </label>
-        <select
-          className="w-full p-2 border rounded"
-          defaultValue="5"
-          {...register("rating", { required: "Rating is required" })}
+        {/* Comments */}
+        <div>
+          <label className="block mb-1">Comments</label>
+          <textarea
+            className="w-full p-2 border rounded"
+            {...register("comments", {
+              maxLength: {
+                value: 200,
+                message: "Comment should not exceed 200 characters",
+              },
+            })}
+          />
+        </div>
+
+        {/* Error Message */}
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          className={`bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center justify-center gap-2 w-full sm:w-auto ${
+            (!emailOtpVerified || !phoneOtpVerified || submitting) &&
+            "opacity-50 cursor-not-allowed"
+          }`}
         >
-          <option value="5">Excellent</option>
-          <option value="4">Very Good</option>
-          <option value="3">Good</option>
-          <option value="2">Fair</option>
-          <option value="1">Poor</option>
-        </select>
-      </div>
+          {submitting ? (
+            <>
+              <svg
+                className="animate-spin h-5 w-5 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                />
+              </svg>
+              Submitting...
+            </>
+          ) : (
+            "Submit Feedback"
+          )}
+        </button>
+      </form>
 
-      {/* Comments */}
-      <div>
-        <label className="block mb-1">Comments</label>
-        <textarea
-          className="w-full p-2 border rounded"
-          {...register("comments", {
-            maxLength: {
-              value: 200,
-              message: "Comment should not exceed 200 characters",
-            },
-          })}
-        />
-      </div>
-
-      {/* Error Message */}
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-
-      {/* Submit Button */}
-      <button
-        type="submit"
-        className={`bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center justify-center gap-2 w-full sm:w-auto ${
-          (!emailOtpVerified || !phoneOtpVerified || submitting) &&
-          "opacity-50 cursor-not-allowed"
-        }`}
-      >
-        {submitting ? (
-          <>
-            <svg
-              className="animate-spin h-5 w-5 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              />
-            </svg>
-            Submitting...
-          </>
-        ) : (
-          "Submit Feedback"
-        )}
-      </button>
-    </form>
-
-    {/* Recaptcha */}
-    <div id="recaptcha-container" className="mt-4" />
-  </div>
-);
-
+      {/* Recaptcha */}
+      <div id="recaptcha-container" className="mt-4" />
+    </div>
+  );
 }
