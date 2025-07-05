@@ -71,7 +71,7 @@ const renderPDF = async () => {
   const desiredHeight = 595;
 
   const rotation = page.rotate; // PDF internal rotation
-  const originalViewport = page.getViewport({ scale: 1.0 });
+  // const originalViewport = page.getViewport({ scale: 1.0 });
   const rotatedViewport = page.getViewport({ scale });
 
   const canvas = canvasRef.current!;

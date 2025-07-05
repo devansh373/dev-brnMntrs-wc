@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { CallableRequest } from "firebase-functions/https";
+import type { CallableRequest } from "firebase-functions/https";
 
 const db = admin.firestore();
 
@@ -10,7 +10,7 @@ interface VerifyOTPRequest {
 }
 
 export const verifyEmailOtp = functions.https.onCall(
-  async (request: CallableRequest<VerifyOTPRequest>, context) => {
+  async (request: CallableRequest<VerifyOTPRequest>) => {
     const { email, otp } = request.data;
 
     if (!email || !otp) {
