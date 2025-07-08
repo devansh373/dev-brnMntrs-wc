@@ -1,10 +1,7 @@
 // At the top before imports
-declare global {
-  interface Window {
-    recaptchaVerifier: import("firebase/auth").RecaptchaVerifier;
-    confirmationResult: import("firebase/auth").ConfirmationResult;
-  }
-}
+
+
+
 
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -18,13 +15,15 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import { auth, db, storage } from "../utils/firebase";
+import {  db, storage } from "../utils/firebase";
 import { useForm } from "react-hook-form";
 import { sendEmailOtp } from "../utils/sendOtp";
 import { verifyEmailOtp } from "../utils/verifyOtp";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { generateCertificate } from "../utils/generateCertificate";
+import { sendPhoneOtp } from "../utils/sendPhoneOtp";
+import { verifyPhoneOtp } from "../utils/verifyPhoneOtp";
 
 const regex = {
   name: /^[A-Za-z\s.'-]{2,50}$/,
@@ -42,6 +41,8 @@ type FeedbackFormFields = {
   rating: number;
   comments: string;
 };
+
+
 
 export default function FeedbackForm() {
   const { id } = useParams();
@@ -121,13 +122,19 @@ export default function FeedbackForm() {
     setProgress(Math.round((filled / totalFields) * 100));
   }, [watchedFields]);
 
-  useEffect(() => {
-    return () => {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-      }
-    };
-  }, []);
+  // useEffect(() => {
+  //   return () => {
+  //     if (window.recaptchaVerifier) {
+  //       window.recaptchaVerifier.clear();
+  //     }
+  //     if (
+  //       typeof window.recaptchaWidgetId !== "undefined" &&
+  //       window.grecaptcha
+  //     ) {
+  //       window.grecaptcha.reset(window.recaptchaWidgetId);
+  //     }
+  //   };
+  // }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -138,22 +145,32 @@ export default function FeedbackForm() {
     return () => clearInterval(interval);
   }, []);
 
-  const setupRecaptcha = async () => {
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-    }
+  // const setupRecaptcha = async () => {
+  //   // Clear old if already created
+  //   // if (window.recaptchaVerifier) {
+  //   //   if (window.recaptchaWidgetId !== undefined) {
+  //   //     window.grecaptcha.reset(window.recaptchaWidgetId);
+  //   //   }
+  //   //   window.recaptchaVerifier.clear(); // clean internal state
+  //   //   window.recaptchaVerifier = null;
+  //   // }
 
-    window.recaptchaVerifier = new RecaptchaVerifier(
-      auth,
-      "recaptcha-container",
-      {
-        size: "invisible",
-        callback: () => console.log("Recaptcha Resolved"),
-      }
-    );
+  //   // Create a new verifier
+  //   // if(!window.recaptchaVerifier)
+  //   const recaptchaVerifier = new RecaptchaVerifier(
+  //     auth,
+  //     "recaptcha-container",
+  //     {
+  //       // size: "invisible",
+  //       // callback: (response: string) => {
+  //       //   console.log("reCAPTCHA solved:", response);
+  //       // },
+  //     }
+  //   );
 
-    // return window.recaptchaVerifier.render();
-  };
+  //   // Store the widget ID for resetting later
+  //   // window.recaptchaWidgetId = await window.recaptchaVerifier.render();
+  // };
 
   // const handleSendOtp = async () => {
   //   try {
@@ -170,6 +187,25 @@ export default function FeedbackForm() {
   //     setLoadingOtp(false);
   //   }
   // };
+
+  //   const setupRecaptcha = async () => {
+  //   const siteKey = "6LfMqXorAAAAADt64MiNMLaqAaT6Xy_K2W8w-zDe"; // 🔁 replace this!
+
+  //   return new Promise<string>((resolve, reject) => {
+  //     window.grecaptcha.enterprise.ready(async () => {
+  //       try {
+  //         const token = await window.grecaptcha.enterprise.execute(siteKey, {
+  //           action: "submit",
+  //         });
+  //         resolve(token);
+  //       } catch (err) {
+  //         console.error("Error generating reCAPTCHA token:", err);
+  //         reject(err);
+  //       }
+  //     });
+  //   });
+  // };
+
   const handleSendOtp = async () => {
     try {
       if (!watchedFields.email) {
@@ -231,46 +267,164 @@ export default function FeedbackForm() {
   //   }
   // };
 
-  const handleSendPhoneOtp = async () => {
-    try {
-      setLoadingPhoneOtp(true);
-      await setupRecaptcha();
-      const confirmationResult = await signInWithPhoneNumber(
-        auth,
-        `+91${watchedFields.phone}`,
-        window.recaptchaVerifier
-      );
-      window.confirmationResult = confirmationResult;
+  // const handleSendPhoneOtp = async () => {
+  //   try {
+  //     setLoadingPhoneOtp(true);
+  //     // await setupRecaptcha();
+  //     const grecaptcha = window.grecaptcha;
+  //     grecaptcha.enterprise.ready(async () => {
+  //       const token = await grecaptcha.enterprise.execute(
+  //         "6LfkpHorAAAAACREQVjjMAtM8oWKRfIVgmr5T-fU",
+  //         { action: "LOGIN" }
+  //       );
+  //       console.log(token);
+  //       const data = await fetch(
+  //         "https://recaptchaenterprise.googleapis.com/v1/projects/workshop-certificates-56fb5/assessments?key=AIzaSyBjFzO0QT9SanSxXs3IAvQreWC43IMGbEs",
+  //         {
+  //           method: "POST",
+  //           body: {
+  //             event: {
+  //               token: token,
+  //               expectedAction: "LOGIN",
+  //               siteKey: "6LfkpHorAAAAACREQVjjMAtM8oWKRfIVgmr5T-fU",
+  //             },
+  //           },
+  //         }
+  //       );
+  //     });
+  //     const recaptchaVerifier = new RecaptchaVerifier(
+  //       auth,
+  //       "recaptcha-container",
+  //       {
+  //         // size: "invisible",
+  //         callback: (response: string) => {
+  //           console.log("reCAPTCHA solved:", response);
+  //         },
+  //       }
+  //     );
+  //     const confirmationResult = await signInWithPhoneNumber(
+  //       auth,
+  //       `+91${watchedFields.phone}`,
+  //       recaptchaVerifier
+  //       // window.recaptchaVerifier!
+  //     );
+  //     console.log(confirmationResult);
+  //     // window.confirmationResult = confirmationResult;
+  //     setPhoneOtpSent(true);
+  //     setPhoneCooldown(60); // Start 60s cooldown
+  //     alert("OTP sent to phone");
+  //   } catch (error) {
+  //     console.error(error);
+  //     alert("Failed to send phone OTP");
+  //   } finally {
+  //     setLoadingPhoneOtp(false);
+  //   }
+  // };
+
+
+// const handleSendPhoneOtp = async () => {
+//   try {
+//     setLoadingPhoneOtp(true);
+
+//     if (window.recaptchaVerifier) {
+//       window.recaptchaVerifier.clear();
+//     }
+
+//     window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+//       size: "invisible",
+//       callback: (response: string) => {
+//         console.log("reCAPTCHA solved:", response);
+//       },
+//     });
+
+//     await window.recaptchaVerifier.render();
+
+//     const confirmationResult = await signInWithPhoneNumber(
+//       auth,
+//       `+91${watchedFields.phone}`,
+//       window.recaptchaVerifier
+//     );
+
+//     window.confirmationResult = confirmationResult;
+//     setPhoneOtpSent(true);
+//     setPhoneCooldown(60);
+//     alert("OTP sent to phone");
+//   } catch (error) {
+//     console.error("OTP error:", error);
+//     alert("Failed to send phone OTP");
+//   } finally {
+//     setLoadingPhoneOtp(false);
+//   }
+// };
+
+
+
+const handleSendPhoneOtp = async () => {
+  try {
+    if (!regex.phone.test(watchedFields.phone)) {
+      alert("Enter a valid 10-digit phone number");
+      return;
+    }
+
+    setLoadingPhoneOtp(true);
+
+    const response = await sendPhoneOtp(watchedFields.phone);
+    if (response.success) {
       setPhoneOtpSent(true);
-      setPhoneCooldown(60); // Start 60s cooldown
-      alert("OTP sent to phone");
-    } catch (error) {
-      console.error(error);
-      alert("Failed to send phone OTP");
-    } finally {
-      setLoadingPhoneOtp(false);
+      setPhoneCooldown(60);
+      alert("Please receive the call for otp");
+    } else {
+      alert(response.message || "Failed to send OTP");
     }
-  };
+  } catch (error) {
+    console.error("OTP error:", error);
+    alert("Failed to send phone OTP");
+  } finally {
+    setLoadingPhoneOtp(false);
+  }
+};
 
-  const handleVerifyPhoneOtp = async () => {
-    try {
-      if (!regex.otp.test(phoneOtpInput)) {
-        alert("Enter a valid 6-digit phone OTP");
-        return;
-      }
 
-      setLoadingPhoneVerification(true);
-      const result = await window.confirmationResult.confirm(phoneOtpInput);
-      if (result.user) {
-        setPhoneOtpVerified(true);
-        alert("Phone number verified!");
-      }
-    } catch {
-      alert("Invalid or expired phone OTP.");
-    } finally {
-      setLoadingPhoneVerification(false);
+
+  // const handleVerifyPhoneOtp = async () => {
+  //   // try {
+  //   //   if (!regex.otp.test(phoneOtpInput)) {
+  //   //     alert("Enter a valid 6-digit phone OTP");
+  //   //     return;
+  //   //   }
+  //   //   setLoadingPhoneVerification(true);
+  //   //   const result = await window.confirmationResult.confirm(phoneOtpInput);
+  //   //   if (result.user) {
+  //   //     setPhoneOtpVerified(true);
+  //   //     alert("Phone number verified!");
+  //   //   }
+  //   // } catch {
+  //   //   alert("Invalid or expired phone OTP.");
+  //   // } finally {
+  //   //   setLoadingPhoneVerification(false);
+  //   // }
+  // };
+
+const handleVerifyPhoneOtp = async () => {
+  if (!regex.otp.test(phoneOtpInput)) {
+    alert("Enter a valid 6-digit phone OTP");
+    return;
+  }
+
+  setLoadingPhoneVerification(true);
+  try {
+    const isValid = await verifyPhoneOtp(watchedFields.phone, phoneOtpInput);
+    if (isValid) {
+      setPhoneOtpVerified(true);
+      alert("Phone verified ✅");
+    } else {
+      alert("Incorrect or expired OTP.");
     }
-  };
+  } finally {
+    setLoadingPhoneVerification(false);
+  }
+};
+
 
   const onSubmit = async (data: FeedbackFormFields) => {
     setError("");
@@ -303,20 +457,25 @@ export default function FeedbackForm() {
         return;
       }
 
+      console.log("before req")
       const templateSnap = await getDocs(
         query(
           collection(db, "certificateTemplates"),
           where("workshopId", "==", id)
         )
       );
+      console.log("after req")
       if (templateSnap.empty) {
         console.log("template not found");
         return;
       }
 
       const templateData = templateSnap.docs[0].data();
+      console.log(templateData)
+      const fileRef = ref(storage, templateData.downloadURL);
+const downloadUrl = await getDownloadURL(fileRef);
       const pdfBytes = await generateCertificate(
-        templateData.downloadURL,
+        downloadUrl,
         templateData.fieldPositions || [],
         {
           name: data.name,
@@ -325,7 +484,7 @@ export default function FeedbackForm() {
           workshopName: formData.workshopName,
         }
       );
-
+console.log(pdfBytes)
       const certRef = ref(storage, `certificates/${id}_${data.email}.pdf`);
       await uploadBytes(
         certRef,
@@ -653,7 +812,9 @@ export default function FeedbackForm() {
       </form>
 
       {/* Recaptcha */}
+
       <div id="recaptcha-container" className="mt-4" />
+      {/* <div className="g-recaptcha" data-sitekey="6LfMqXorAAAAADt64MiNMLaqAaT6Xy_K2W8w-zDe" data-action="LOGIN"></div> */}
     </div>
   );
 }
